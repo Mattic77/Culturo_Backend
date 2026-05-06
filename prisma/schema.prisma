@@ -1,0 +1,217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Level {
+  Beginner
+  Intermediate
+  Expert
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  password     String
+  dateOfBirth  DateTime? @map("date_of_birth") @db.Date
+  isActivate   Boolean   @default(false) @map("is_activate")
+  notification Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  propriety       UserPropriety?
+  tokens          Token[]
+  userCategories  UserCategory[]
+  games           Games[]
+  battlesAsUser1  Battle[]         @relation("User1Battles")
+  battlesAsUser2  Battle[]         @relation("User2Battles")
+  battlesWon      Battle[]         @relation("WinnerBattles")
+  stat            UserStat?
+  rankOnline      UserRankOnline[]
+  rankOffline     UserRankOffline[]
+
+  @@map("user")
+}
+
+model Token {
+  id          String   @id @default(uuid())
+  hashedToken String   @unique @map("hashed_token")
+  userId      String   @map("user_id")
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("token")
+}
+
+model UserPropriety {
+  id        String  @id @default(uuid())
+  userId    String  @unique @map("user_id")
+  countryId String? @map("country_id")
+  level     Level   @default(Beginner)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country Country? @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@map("user_propriety")
+}
+
+model Country {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  flagIcon  String?  @map("flag_icon")
+  createdAt DateTime @default(now())
+
+  // Relations
+  userProprieties UserPropriety[]
+  quizzes         Quiz[]
+
+  @@map("country")
+}
+
+model Category {
+  id   String  @id @default(uuid())
+  name String  @unique
+  icon String?
+
+  // Relations
+  userCategories UserCategory[]
+  quizzes        Quiz[]
+  games          Games[]
+
+  @@map("category")
+}
+
+model UserCategory {
+  id           String @id @default(uuid())
+  userId       String @map("user_id")
+  categoryId   String @map("category_id")
+  score        Int    @default(0)
+  matchsPlayed Int    @default(0) @map("matchs_played")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+  @@index([categoryId])
+  @@map("user_categories")
+}
+
+model Quiz {
+  id              String  @id @default(uuid())
+  categoryId      String  @map("category_id")
+  countryId       String? @map("country_id")
+  question        String
+  answer          String
+  suggestedAnswer Json?   @map("suggested_answer")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  country  Country? @relation(fields: [countryId], references: [id], onDelete: SetNull)
+
+  @@index([categoryId])
+  @@index([countryId])
+  @@map("quiz")
+}
+
+model Games {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  categoryId String?  @map("category_id")
+  score      Int      @default(0)
+  playedAt   DateTime @default(now()) @map("played_at")
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@map("games")
+}
+
+model Battle {
+  id             String    @id @default(uuid())
+  user1Id        String    @map("user1_id")
+  user2Id        String    @map("user2_id")
+  battleStartAt  DateTime  @default(now()) @map("battle_start_at")
+  battleEndAt    DateTime? @map("battle_end_at")
+  winnerId       String?   @map("winner_id")
+
+  user1  User  @relation("User1Battles", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2  User  @relation("User2Battles", fields: [user2Id], references: [id], onDelete: Cascade)
+  winner User? @relation("WinnerBattles", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  @@index([user1Id])
+  @@index([user2Id])
+  @@map("battle")
+}
+
+model UserStat {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stat")
+}
+
+model Ranked {
+  id        String   @id @default(uuid())
+  minRank   Int      @map("min_rank")
+  maxRank   Int      @map("max_rank")
+  createdAt DateTime @default(now())
+
+  rankOnline  UserRankOnline[]
+  rankOffline UserRankOffline[]
+
+  @@map("ranked")
+}
+
+model UserRankOnline {
+  id          String @id @default(uuid())
+  userId      String @map("user_id")
+  rankId      String @map("rank_id")
+  scoreBattle Int    @default(0) @map("score_battle")
+
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_rank_online")
+}
+
+model UserRankOffline {
+  id          String @id @default(uuid())
+  userId      String @map("user_id")
+  rankId      String @map("rank_id")
+  scoreBattle Int    @default(0) @map("score_battle")
+
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_rank_offline")
+}
+
