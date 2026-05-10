@@ -18,6 +18,7 @@ model User {
   password       String
   dateOfBirth    DateTime?         @map("date_of_birth") @db.Date
   isActivate     Boolean           @default(false) @map("is_activate")
+  color         String?            @default("#000000")
   notification   Boolean           @default(true)
   userType       Usertype          @default(user)
   createdAt      DateTime          @default(now())

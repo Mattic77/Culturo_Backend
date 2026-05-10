@@ -62,6 +62,7 @@ export class AuthService {
       data: {
         email: createAuthDto.email,
         password: hashpassword,
+        isActivate: true,
       },
     });
     const token = await this.tokenHandler.createAndSaveTokens(user.id);
