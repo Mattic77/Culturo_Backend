@@ -1,66 +1,71 @@
 import nodemailer from 'nodemailer';
 
 export class AuthEmail {
-  private static getMailConfig() {
-    const host = process.env.SMTP_HOST ?? '';
-    const port = Number(process.env.SMTP_PORT ?? 587);
+  private static getTransporter() {
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASSWORD;
-    const from = process.env.SMTP_USER ?? user;
 
-    if (!host || !user || !pass || !from) {
-      throw new Error('SMTP configuration is missing');
+    if (!user || !pass) {
+      throw new Error(
+        'SMTP_USER or SMTP_PASSWORD is missing from environment variables',
+      );
     }
 
-    return { host, port, user, pass, from };
-  }
-
-  private static createTransporter() {
-    const { host, port, user, pass } = this.getMailConfig();
-
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
+    return nodemailer.createTransport({
+      service: 'gmail',
       auth: {
         user,
         pass,
       },
     });
-
-    return transporter;
   }
 
-  static confirmation(email: string, otp: number) {
-    const { from } = this.getMailConfig();
+  private static getFromEmail() {
+    return process.env.EMAIL_FROM ?? `Culturo <${process.env.SMTP_USER}>`;
+  }
+
+  static async confirmation(email: string, otp: number) {
+    const from = this.getFromEmail();
     const message = `
       <p>Dear ${email},</p>
       <p>Welcome to Culturo platform!</p>
       <p>Please use the following OTP to confirm your email address:</p>
-      <p>Your OTP is: ${otp}</p>
+      <p>Your OTP is: <strong>${otp}</strong></p>
       <p>If you didn't create an account, please ignore this email.</p>`;
 
-    return this.createTransporter().sendMail({
-      from,
-      to: email,
-      subject: 'Confirm your email address',
-      html: message,
-    });
+    try {
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
+        from,
+        to: email,
+        subject: 'Confirm your email address',
+        html: message,
+      });
+    } catch (err) {
+      console.error('SMTP Email sending failed (confirmation):', err);
+      throw err;
+    }
   }
 
-  static welcoming(email: string, username: string) {
-    const { from } = this.getMailConfig();
+  static async welcoming(email: string, username: string) {
+    const from = this.getFromEmail();
     const message = `
-      <p>Dear ${username}</p>
+      <p>Dear ${username},</p>
       <p>Welcome to Culturo platform!</p>
       <p>Your account has been created successfully.</p>
       <p>We’re glad to have you with us.</p>`;
 
-    return this.createTransporter().sendMail({
-      from,
-      to: email,
-      subject: 'Welcome to Culturo',
-      html: message,
-    });
+    try {
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
+        from,
+        to: email,
+        subject: 'Welcome to Culturo',
+        html: message,
+      });
+    } catch (err) {
+      console.error('SMTP Email sending failed (welcoming):', err);
+      throw err;
+    }
   }
 }

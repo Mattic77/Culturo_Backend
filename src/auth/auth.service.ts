@@ -35,7 +35,14 @@ export class AuthService {
         expiresAt: expiresAt,
       },
     });
-    await AuthEmail.confirmation(createAuthWithOtpDto.email, otp);
+    try {
+      await AuthEmail.confirmation(createAuthWithOtpDto.email, otp);
+    } catch (error) {
+      throw new HttpException(
+        `Failed to send confirmation email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
+      );
+    }
 
     return {
       message: 'OTP sent to email',
@@ -66,7 +73,15 @@ export class AuthService {
       },
     });
     const token = await this.tokenHandler.createAndSaveTokens(user.id);
-    await AuthEmail.welcoming(createAuthDto.email, user.username || user.email);
+    try {
+      await AuthEmail.welcoming(
+        createAuthDto.email,
+        user.username || user.email,
+      );
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      // We don't throw here to avoid blocking registration if only the welcome email fails
+    }
     return {
       message: 'User created successfully',
       user: {

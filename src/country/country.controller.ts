@@ -11,9 +11,9 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CountryService } from './country.service';
+import { CreateCountryDto } from './dto/create-country.dto';
+import { UpdateCountryDto } from './dto/update-country.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -33,24 +33,27 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Express } from 'express';
 import * as multer from 'multer';
 
-@ApiTags('category')
-@Controller('category')
-export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+@ApiTags('country')
+@Controller('country')
+export class CountryController {
+  constructor(private readonly countryService: CountryService) {}
 
   @Post('create')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Usertype.admin)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('icon', { storage: multer.memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('flagIcon', { storage: multer.memoryStorage() }),
+  )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new category (Admin only)' })
+  @ApiOperation({ summary: 'Create a new country (Admin only)' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        icon: {
+        continentId: { type: 'string' },
+        flagIcon: {
           type: 'string',
           format: 'binary',
         },
@@ -59,53 +62,56 @@ export class CategoryController {
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'The category has been successfully created.',
+    description: 'The country has been successfully created.',
   })
   @ApiBadRequestResponse({
-    description: 'Category name already exists or invalid data.',
+    description: 'Country name already exists or invalid data.',
   })
   @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   create(
-    @Body() createCategoryDto: CreateCategoryDto,
+    @Body() createCountryDto: CreateCountryDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.categoryService.create(createCategoryDto, file);
+    return this.countryService.create(createCountryDto, file);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all categories' })
+  @ApiOperation({ summary: 'Get all countries' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns all categories.',
+    description: 'Returns all countries.',
   })
   findAll() {
-    return this.categoryService.findAll();
+    return this.countryService.findAll();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a category by id' })
+  @ApiOperation({ summary: 'Get a country by id' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns the category.',
+    description: 'Returns the country.',
   })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiNotFoundResponse({ description: 'Country not found.' })
   findOne(@Param('id') id: string) {
-    return this.categoryService.findOne(id);
+    return this.countryService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Usertype.admin)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('icon', { storage: multer.memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('flagIcon', { storage: multer.memoryStorage() }),
+  )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Update a category (Admin only)' })
+  @ApiOperation({ summary: 'Update a country (Admin only)' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        icon: {
+        continentId: { type: 'string' },
+        flagIcon: {
           type: 'string',
           format: 'binary',
         },
@@ -114,33 +120,33 @@ export class CategoryController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'The category has been successfully updated.',
+    description: 'The country has been successfully updated.',
   })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiNotFoundResponse({ description: 'Country not found.' })
   @ApiBadRequestResponse({
-    description: 'Category name already exists or invalid data.',
+    description: 'Country name already exists or invalid data.',
   })
   @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   update(
     @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Body() updateCountryDto: UpdateCountryDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.categoryService.update(id, updateCategoryDto, file);
+    return this.countryService.update(id, updateCountryDto, file);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Usertype.admin)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a category (Admin only)' })
+  @ApiOperation({ summary: 'Delete a country (Admin only)' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'The category has been successfully deleted.',
+    description: 'The country has been successfully deleted.',
   })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiNotFoundResponse({ description: 'Country not found.' })
   @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   remove(@Param('id') id: string) {
-    return this.categoryService.remove(id);
+    return this.countryService.remove(id);
   }
 }
