@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import type { Express } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -11,7 +12,10 @@ export class CategoryService {
     private readonly cloudinary: CloudinaryService,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto, file?: Express.Multer.File) {
+  async create(
+    createCategoryDto: CreateCategoryDto,
+    file?: Express.Multer.File,
+  ) {
     try {
       const existingCategory = await this.prisma.category.findUnique({
         where: { name: createCategoryDto.name },
@@ -38,6 +42,7 @@ export class CategoryService {
         },
       });
     } catch (error) {
+      console.error('Category create error:', (error as any)?.message ?? error);
       if (error instanceof HttpException) {
         throw error;
       }
@@ -81,7 +86,11 @@ export class CategoryService {
     }
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto, file?: Express.Multer.File) {
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    file?: Express.Multer.File,
+  ) {
     try {
       const category = await this.prisma.category.findUnique({
         where: { id },

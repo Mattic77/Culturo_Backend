@@ -7,6 +7,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { CategoryModule } from './category/category.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ConfigModule } from '@nestjs/config';
+import { ContinentModule } from './continent/continent.module';
+import { CountryModule } from './country/country.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { ConfigModule } from '@nestjs/config';
     PrismaModule,
     CategoryModule,
     CloudinaryModule,
+    ContinentModule,
+    CountryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

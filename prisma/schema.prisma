@@ -18,7 +18,7 @@ model User {
   password       String
   dateOfBirth    DateTime?         @map("date_of_birth") @db.Date
   isActivate     Boolean           @default(false) @map("is_activate")
-  color         String?            @default("#000000")
+  color          String?           @default("#000000")
   notification   Boolean           @default(true)
   userType       Usertype          @default(user)
   createdAt      DateTime          @default(now())
@@ -74,11 +74,22 @@ model Country {
   id              String          @id @default(uuid())
   name            String          @unique
   flagIcon        String?         @map("flag_icon")
+  continentId     String?         @map("continent_id")
   createdAt       DateTime        @default(now())
   quizzes         Quiz[]
   userProprieties UserPropriety[]
+  continent       Continent?      @relation(fields: [continentId], references: [id])
 
+  @@index([continentId])
   @@map("country")
+}
+
+model Continent {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  countries Country[]
+
+  @@map("continent")
 }
 
 model Category {
