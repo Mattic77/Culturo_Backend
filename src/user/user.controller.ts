@@ -4,6 +4,7 @@ import {
   Body,
   Patch,
   Delete,
+  Param,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -71,5 +72,13 @@ export class UserController {
   @ApiBadRequestResponse({ description: 'Failed to delete user.' })
   deleteCurrentUser(@Request() req: { user: { id: string } }) {
     return this.userService.deleteUser(req.user.id);
+  }
+
+  @Get('profile/:id')
+  @ApiOperation({ summary: 'Get Public Profile of any User' })
+  @ApiCreatedResponse({ description: 'Public profile retrieved successfully.' })
+  @ApiBadRequestResponse({ description: 'User not found.' })
+  getPublicProfile(@Param('id') id: string) {
+    return this.userService.getPublicProfile(id);
   }
 }

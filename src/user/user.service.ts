@@ -172,4 +172,31 @@ export class UserService {
       take,
     };
   }
+
+  /**
+   * Get a public profile of any user safely
+   */
+  async getPublicProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        color: true,
+        createdAt: true,
+        userLevel: true,
+        rankOnline: {
+          include: {
+            rank: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', 404);
+    }
+
+    return user;
+  }
 }
