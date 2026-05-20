@@ -36,9 +36,9 @@ model User {
   stat           UserStat?
 
   @@map("user")
-  }
+}
 
-  model UserLevel {
+model UserLevel {
   id               String  @id @default(uuid())
   userId           String  @unique @map("user_id")
   xp               Int     @default(0)
@@ -47,9 +47,9 @@ model User {
   user             User    @relation(fields: [userId], references: [id], onDelete: Cascade) 
 
   @@map("user_level")
-  }
+}
 
-  model Otp {
+model Otp {
   id        String   @id @default(uuid())
   email     String   @unique
   code      Int
@@ -57,9 +57,9 @@ model User {
   createdAt DateTime @default(now())
 
   @@map("otp")
-  }
+}
 
-  model Token {
+model Token {
   id          String   @id @default(uuid())
   hashedToken String   @unique @map("hashed_token")
   userId      String   @unique @map("user_id")
@@ -69,9 +69,9 @@ model User {
 
   @@index([userId])
   @@map("token")
-  }
+}
 
-  model UserPropriety {
+model UserPropriety {
   id        String   @id @default(uuid())
   userId    String   @unique @map("user_id")
   countryId String?  @map("country_id")
@@ -80,39 +80,41 @@ model User {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_propriety")
-  }
+}
 
-  model Country {
+model Country {
   id              String          @id @default(uuid())
   name            String          @unique
   flagIcon        String?         @map("flag_icon")
   continentId     String?         @map("continent_id")
   createdAt       DateTime        @default(now())
+  quizzes         Quiz[]
   userProprieties UserPropriety[]
   continent       Continent?      @relation(fields: [continentId], references: [id])        
 
   @@index([continentId])
   @@map("country")
-  }
+}
 
-  model Continent {
+model Continent {
   id        String    @id @default(uuid())
   name      String    @unique
   countries Country[]
 
   @@map("continent")
-  }
+}
 
-  model Category {
+model Category {
   id             String         @id @default(uuid())
   name           String         @unique
   icon           String?
+  quizzes        Quiz[]
   userCategories UserCategory[]
-
+  
   @@map("category")
-  }
+}
 
-  model UserCategory {
+model UserCategory {
   id           String   @id @default(uuid())
   userId       String   @map("user_id")
   categoryId   String   @map("category_id")
@@ -125,9 +127,31 @@ model User {
   @@index([userId])
   @@index([categoryId])
   @@map("user_categories")
-  }
+}
 
-  model Battle {
+model Quiz {
+  id              String     @id @default(uuid())
+  categoryId      String     @map("category_id")
+  countryId       String?    @map("country_id")
+  difficulty      Difficulty @default(Easy)
+  question        String
+  answer          String
+  suggestedAnswer Json?      @map("suggested_answer")
+  category        Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  country         Country?   @relation(fields: [countryId], references: [id])
+
+  @@index([categoryId])
+  @@index([countryId])
+  @@map("quiz")
+}
+
+enum Difficulty {
+  Easy
+  Medium
+  Hard
+}
+
+model Battle {
   id            String    @id @default(uuid())
   user1Id       String    @map("user1_id")
   user2Id       String    @map("user2_id")
@@ -141,17 +165,17 @@ model User {
   @@index([user1Id])
   @@index([user2Id])
   @@map("battle")
-  }
+}
 
-  model UserStat {
+model UserStat {
   id     String @id @default(uuid())
   userId String @unique @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stat")
-  }
+}
 
-  model Ranked {
+model Ranked {
   id          String            @id @default(uuid())
   name        String            @unique
   minScore    Int               @map("min_score")
@@ -161,9 +185,9 @@ model User {
   rankOnline  UserRankOnline[]
 
   @@map("ranked")
-  }
+}
 
-  model UserRankOnline {
+model UserRankOnline {
   id     String @id @default(uuid())
   userId String @map("user_id")
   rankId String @map("rank_id")
@@ -173,9 +197,9 @@ model User {
 
   @@index([userId])
   @@map("user_rank_online")
-  }
+}
 
-  model UserRankOffline {
+model UserRankOffline {
   id     String @id @default(uuid())
   userId String @map("user_id")
   rankId String @map("rank_id")
@@ -185,10 +209,11 @@ model User {
 
   @@index([userId])
   @@map("user_rank_offline")
-  }
+}
 
-  enum Level {
+enum Level {
   Beginner
   Intermediate
   Expert
-  }
+}
+

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { Usertype, Continent } from '@prisma/client';
+import { Usertype, Continent, Difficulty } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -113,6 +113,48 @@ async function main() {
       }
     }
     console.log('All countries seeded from API.');
+
+    // --- Seed Quizzes ---
+    console.log('Seeding quizzes...');
+    const historyCategory = await prisma.category.findUnique({ where: { name: 'History' } });
+    const geographyCategory = await prisma.category.findUnique({ where: { name: 'Geography' } });
+    const morocco = await prisma.country.findUnique({ where: { name: 'Morocco' } });
+    const france = await prisma.country.findUnique({ where: { name: 'France' } });
+
+    if (historyCategory && geographyCategory && morocco && france) {
+      const quizzes = [
+        {
+          categoryId: historyCategory.id,
+          countryId: morocco.id,
+          difficulty: Difficulty.Easy,
+          question: 'In what year did Morocco gain independence?',
+          answer: '1956',
+          suggestedAnswer: { options: ['1950', '1956', '1960', '1965'] },
+        },
+        {
+          categoryId: geographyCategory.id,
+          countryId: france.id,
+          difficulty: Difficulty.Medium,
+          question: 'What is the largest city in France?',
+          answer: 'Paris',
+          suggestedAnswer: { options: ['Lyon', 'Marseille', 'Paris', 'Bordeaux'] },
+        },
+        {
+          categoryId: geographyCategory.id,
+          difficulty: Difficulty.Hard,
+          question: 'Which is the largest continent by area?',
+          answer: 'Asia',
+          suggestedAnswer: { options: ['Africa', 'Asia', 'Europe', 'North America'] },
+        },
+      ];
+
+      for (const quiz of quizzes) {
+        await prisma.quiz.create({
+          data: quiz,
+        });
+      }
+    }
+    console.log('Quizzes seeded.');
 
     // --- Seed Users ---
     const hashedPassword = await bcrypt.hash('password123', 10);
