@@ -33,9 +33,46 @@ model User {
   userLevel      UserLevel?
   rankOffline    UserRankOffline[]
   rankOnline     UserRankOnline[]
+  gameSessions   GameSession[]
   stat           UserStat?
 
   @@map("user")
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model GameSession {
+  id           String                @id @default(uuid())
+  userId       String                @map("user_id")
+  difficulty   Difficulty?
+  countryId    String?               @map("country_id")
+  currentScore Int                   @default(0) @map("current_score")
+  status       SessionStatus         @default(ACTIVE)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  completedAt  DateTime?             @map("completed_at")
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions    GameSessionQuestion[]
+
+  @@index([userId])
+  @@map("game_session")
+}
+
+model GameSessionQuestion {
+  id          String      @id @default(uuid())
+  sessionId   String      @map("session_id")
+  quizId      String      @map("quiz_id")
+  order       Int
+  isAnswered  Boolean     @default(false) @map("is_answered")
+  isCorrect   Boolean     @default(false) @map("is_correct")
+  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  quiz        Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("game_session_question")
 }
 
 model UserLevel {
@@ -44,7 +81,7 @@ model UserLevel {
   xp               Int     @default(0)
   level            Int     @default(1)
   isBattleUnlocked Boolean @default(false) @map("is_battle_unlocked")
-  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_level")
 }
@@ -89,8 +126,9 @@ model Country {
   continentId     String?         @map("continent_id")
   createdAt       DateTime        @default(now())
   quizzes         Quiz[]
+  games           Games[]
   userProprieties UserPropriety[]
-  continent       Continent?      @relation(fields: [continentId], references: [id])        
+  continent       Continent?      @relation(fields: [continentId], references: [id])
 
   @@index([continentId])
   @@map("country")
@@ -108,6 +146,7 @@ model Category {
   id             String         @id @default(uuid())
   name           String         @unique
   icon           String?
+  games          Games[]
   quizzes        Quiz[]
   userCategories UserCategory[]
   
@@ -139,6 +178,7 @@ model Quiz {
   suggestedAnswer Json?      @map("suggested_answer")
   category        Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   country         Country?   @relation(fields: [countryId], references: [id])
+  sessionQuestions GameSessionQuestion[]
 
   @@index([categoryId])
   @@index([countryId])
@@ -149,6 +189,25 @@ enum Difficulty {
   Easy
   Medium
   Hard
+}
+
+model Games {
+  id         String     @id @default(uuid())
+  userId     String     @map("user_id")
+  categoryId String?    @map("category_id")
+  countryId  String?    @map("country_id")
+  difficulty Difficulty
+  score      Int        @default(0)
+  playedAt   DateTime   @default(now()) @map("played_at")
+  createdAt  DateTime   @default(now())
+  category   Category?  @relation(fields: [categoryId], references: [id])
+  country    Country?   @relation(fields: [countryId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([countryId])
+  @@map("games")
 }
 
 model Battle {
@@ -216,4 +275,3 @@ enum Level {
   Intermediate
   Expert
 }
-
