@@ -9,6 +9,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ConfigModule } from '@nestjs/config';
 import { ContinentModule } from './continent/continent.module';
 import { CountryModule } from './country/country.module';
+import { QuizModule } from './quiz/quiz.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CountryModule } from './country/country.module';
     CloudinaryModule,
     ContinentModule,
     CountryModule,
+    QuizModule,
   ],
   controllers: [AppController],
   providers: [AppService],
