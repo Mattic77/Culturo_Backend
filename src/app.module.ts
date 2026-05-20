@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ContinentModule } from './continent/continent.module';
 import { CountryModule } from './country/country.module';
 import { QuizModule } from './quiz/quiz.module';
+import { GameModule } from './game/game.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { QuizModule } from './quiz/quiz.module';
     ContinentModule,
     CountryModule,
     QuizModule,
+    GameModule,
   ],
   controllers: [AppController],
   providers: [AppService],
