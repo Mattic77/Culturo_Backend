@@ -30,14 +30,26 @@ model User {
   tokens         Token[]
   userCategories UserCategory[]
   propriety      UserPropriety?
+  userLevel      UserLevel?
   rankOffline    UserRankOffline[]
   rankOnline     UserRankOnline[]
   stat           UserStat?
 
   @@map("user")
-}
+  }
 
-model Otp {
+  model UserLevel {
+  id               String  @id @default(uuid())
+  userId           String  @unique @map("user_id")
+  xp               Int     @default(0)
+  level            Int     @default(1)
+  isBattleUnlocked Boolean @default(false) @map("is_battle_unlocked")
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade) 
+
+  @@map("user_level")
+  }
+
+  model Otp {
   id        String   @id @default(uuid())
   email     String   @unique
   code      Int
@@ -45,9 +57,9 @@ model Otp {
   createdAt DateTime @default(now())
 
   @@map("otp")
-}
+  }
 
-model Token {
+  model Token {
   id          String   @id @default(uuid())
   hashedToken String   @unique @map("hashed_token")
   userId      String   @unique @map("user_id")
@@ -57,9 +69,9 @@ model Token {
 
   @@index([userId])
   @@map("token")
-}
+  }
 
-model UserPropriety {
+  model UserPropriety {
   id        String   @id @default(uuid())
   userId    String   @unique @map("user_id")
   countryId String?  @map("country_id")
@@ -68,42 +80,39 @@ model UserPropriety {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_propriety")
-}
+  }
 
-model Country {
+  model Country {
   id              String          @id @default(uuid())
   name            String          @unique
   flagIcon        String?         @map("flag_icon")
   continentId     String?         @map("continent_id")
   createdAt       DateTime        @default(now())
-  quizzes         Quiz[]
   userProprieties UserPropriety[]
-  continent       Continent?      @relation(fields: [continentId], references: [id])
+  continent       Continent?      @relation(fields: [continentId], references: [id])        
 
   @@index([continentId])
   @@map("country")
-}
+  }
 
-model Continent {
+  model Continent {
   id        String    @id @default(uuid())
   name      String    @unique
   countries Country[]
 
   @@map("continent")
-}
+  }
 
-model Category {
+  model Category {
   id             String         @id @default(uuid())
   name           String         @unique
   icon           String?
-  games          Games[]
-  quizzes        Quiz[]
   userCategories UserCategory[]
 
   @@map("category")
-}
+  }
 
-model UserCategory {
+  model UserCategory {
   id           String   @id @default(uuid())
   userId       String   @map("user_id")
   categoryId   String   @map("category_id")
@@ -116,39 +125,9 @@ model UserCategory {
   @@index([userId])
   @@index([categoryId])
   @@map("user_categories")
-}
+  }
 
-model Quiz {
-  id              String   @id @default(uuid())
-  categoryId      String   @map("category_id")
-  countryId       String?  @map("country_id")
-  question        String
-  answer          String
-  suggestedAnswer Json?    @map("suggested_answer")
-  category        Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  country         Country? @relation(fields: [countryId], references: [id])
-
-  @@index([categoryId])
-  @@index([countryId])
-  @@map("quiz")
-}
-
-model Games {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  categoryId String?   @map("category_id")
-  score      Int       @default(0)
-  playedAt   DateTime  @default(now()) @map("played_at")
-  createdAt  DateTime  @default(now())
-  category   Category? @relation(fields: [categoryId], references: [id])
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([categoryId])
-  @@map("games")
-}
-
-model Battle {
+  model Battle {
   id            String    @id @default(uuid())
   user1Id       String    @map("user1_id")
   user2Id       String    @map("user2_id")
@@ -162,53 +141,54 @@ model Battle {
   @@index([user1Id])
   @@index([user2Id])
   @@map("battle")
-}
+  }
 
-model UserStat {
+  model UserStat {
   id     String @id @default(uuid())
   userId String @unique @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stat")
-}
+  }
 
-model Ranked {
+  model Ranked {
   id          String            @id @default(uuid())
-  minRank     Int               @map("min_rank")
-  maxRank     Int               @map("max_rank")
+  name        String            @unique
+  minScore    Int               @map("min_score")
+  maxScore    Int               @map("max_score")
   createdAt   DateTime          @default(now())
   rankOffline UserRankOffline[]
   rankOnline  UserRankOnline[]
 
   @@map("ranked")
-}
+  }
 
-model UserRankOnline {
-  id          String @id @default(uuid())
-  userId      String @map("user_id")
-  rankId      String @map("rank_id")
-  scoreBattle Int    @default(0) @map("score_battle")
-  rank        Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model UserRankOnline {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  rankId String @map("rank_id")
+  points Int    @default(0)
+  rank   Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_rank_online")
-}
+  }
 
-model UserRankOffline {
-  id          String @id @default(uuid())
-  userId      String @map("user_id")
-  rankId      String @map("rank_id")
-  scoreBattle Int    @default(0) @map("score_battle")
-  rank        Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model UserRankOffline {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  rankId String @map("rank_id")
+  points Int    @default(0)
+  rank   Ranked @relation(fields: [rankId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_rank_offline")
-}
+  }
 
-enum Level {
+  enum Level {
   Beginner
   Intermediate
   Expert
-}
+  }

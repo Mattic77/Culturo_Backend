@@ -70,6 +70,9 @@ export class AuthService {
         email: createAuthDto.email,
         password: hashpassword,
         isActivate: true,
+        userLevel: {
+          create: {},
+        },
       },
     });
     const token = await this.tokenHandler.createAndSaveTokens(user.id);
