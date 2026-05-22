@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CategoryService } from './category.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 describe('CategoryService', () => {
   let service: CategoryService;
@@ -14,6 +15,10 @@ describe('CategoryService', () => {
           useValue: {
             category: {},
           },
+        },
+        {
+          provide: CloudinaryService,
+          useValue: {},
         },
       ],
     }).compile();
