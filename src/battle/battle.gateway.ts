@@ -8,7 +8,9 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { BattleService, WaitingPlayer, BattleState } from './battle.service';
+import { BattleService, WaitingPlayer } from './battle.service';
+import { UseGuards } from '@nestjs/common';
+import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
 
 @WebSocketGateway({
   cors: {
@@ -28,19 +30,22 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    const userId = client.handshake.query.userId as string;
-    if (userId) {
-      this.battleService.removeFromQueue(userId);
+    const user = client.data.user;
+    if (user?.id) {
+      this.battleService.removeFromQueue(user.id);
     }
   }
 
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('join_queue')
   handleJoinQueue(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { userId: string; username: string },
+    @MessageBody() data: { username: string },
   ) {
+    const user = client.data.user;
+    
     const player: WaitingPlayer = {
-      userId: data.userId,
+      userId: user.id,
       socketId: client.id,
       username: data.username,
       joinedAt: new Date(),
@@ -115,6 +120,7 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('submit_answer')
   async handleSubmitAnswer(
     @ConnectedSocket() client: Socket,
@@ -123,7 +129,9 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const state = this.battleService.getBattleState(data.roomId);
     if (!state || state.status !== 'IN_PROGRESS') return;
 
-    const player = state.players.find(p => p.socketId === client.id);
+    const user = client.data.user;
+    const player = state.players.find(p => p.userId === user.id);
+    
     if (!player || player.hasAnswered) return;
 
     const timeTaken = Date.now() - state.roundStartTime;
