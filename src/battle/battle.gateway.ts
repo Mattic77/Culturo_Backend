@@ -193,6 +193,30 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @UseGuards(WsAuthGuard)
+  @SubscribeMessage('send_battle_message')
+  async handleBattleMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: string; message: string },
+  ) {
+    const user = client.data.user;
+    const state = this.battleService.getBattleState(data.roomId);
+
+    if (!state || state.status !== 'IN_PROGRESS') return;
+
+    // Check if the user is a participant
+    const isParticipant = state.players.some(p => p.userId === user.id);
+    if (!isParticipant) return;
+
+    // Broadcast the message to everyone in the room
+    this.server.to(data.roomId).emit('new_battle_message', {
+      senderId: user.id,
+      senderUsername: state.players.find(p => p.userId === user.id)?.username || 'Someone',
+      message: data.message,
+      timestamp: new Date(),
+    });
+  }
+
   private proceedToNextRound(roomId: string) {
     const state = this.battleService.getBattleState(roomId);
     if (!state) return;
