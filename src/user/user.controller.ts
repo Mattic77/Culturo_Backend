@@ -5,24 +5,68 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/guards/roles.decorator';
+import { Usertype } from '@prisma/client';
 import {
   ApiOperation,
   ApiTags,
   ApiCreatedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiOkResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @Controller('users')
 @ApiTags('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Get('admin/all')
+  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiOkResponse({ description: 'List of users retrieved successfully.' })
+  getAllUsers(
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.userService.getAllUsers(+(skip || 0), +(take || 10));
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Get('admin/stats')
+  @ApiOperation({ summary: 'Get user platform statistics (Admin only)' })
+  @ApiOkResponse({ description: 'Statistics retrieved successfully.' })
+  getAdminStats() {
+    return this.userService.getAdminStats();
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Patch('admin/user-type/:id')
+  @ApiOperation({ summary: 'Update user type/role (Admin only)' })
+  @ApiOkResponse({ description: 'User type updated successfully.' })
+  updateUserType(
+    @Param('id') id: string,
+    @Body('userType') userType: Usertype,
+  ) {
+    return this.userService.updateUserType(id, userType);
+  }
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth()

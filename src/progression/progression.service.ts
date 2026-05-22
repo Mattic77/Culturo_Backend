@@ -59,4 +59,29 @@ export class ProgressionService {
       offline: offlineRank || null,
     };
   }
+
+  /**
+   * Create a new rank (Admin only)
+   */
+  async createRank(data: { name: string; minScore: number; maxScore: number }) {
+    return this.prisma.ranked.create({ data });
+  }
+
+  /**
+   * Update a rank (Admin only)
+   */
+  async updateRank(id: string, data: { name?: string; minScore?: number; maxScore?: number }) {
+    return this.prisma.ranked.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Delete a rank (Admin only)
+   */
+  async deleteRank(id: string) {
+    await this.prisma.ranked.delete({ where: { id } });
+    return { message: 'Rank deleted successfully' };
+  }
 }

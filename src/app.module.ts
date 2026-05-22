@@ -13,6 +13,7 @@ import { QuizModule } from './quiz/quiz.module';
 import { GameModule } from './game/game.module';
 import { ProgressionModule } from './progression/progression.module';
 import { BattleModule } from './battle/battle.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { BattleModule } from './battle/battle.module';
     GameModule,
     ProgressionModule,
     BattleModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

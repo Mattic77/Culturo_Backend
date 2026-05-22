@@ -1,11 +1,25 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ProgressionService } from './progression.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/guards/roles.decorator';
+import { Usertype } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiOkResponse,
+  ApiCreatedResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('progression')
@@ -36,5 +50,40 @@ export class ProgressionController {
   @ApiOkResponse({ description: 'List of ranks retrieved successfully.' })
   getAllRanks() {
     return this.progressionService.getAllRanks();
+  }
+
+  // --- Admin Endpoints ---
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Post('ranks')
+  @ApiOperation({ summary: 'Create a new rank (Admin only)' })
+  @ApiCreatedResponse({ description: 'Rank created successfully.' })
+  createRank(@Body() data: { name: string; minScore: number; maxScore: number }) {
+    return this.progressionService.createRank(data);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Patch('ranks/:id')
+  @ApiOperation({ summary: 'Update a rank (Admin only)' })
+  @ApiOkResponse({ description: 'Rank updated successfully.' })
+  updateRank(
+    @Param('id') id: string,
+    @Body() data: { name?: string; minScore?: number; maxScore?: number },
+  ) {
+    return this.progressionService.updateRank(id, data);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Usertype.admin)
+  @ApiBearerAuth()
+  @Delete('ranks/:id')
+  @ApiOperation({ summary: 'Delete a rank (Admin only)' })
+  @ApiOkResponse({ description: 'Rank deleted successfully.' })
+  deleteRank(@Param('id') id: string) {
+    return this.progressionService.deleteRank(id);
   }
 }
