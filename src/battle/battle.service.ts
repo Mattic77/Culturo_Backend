@@ -187,4 +187,72 @@ export class BattleService {
     if (xp >= 1000) return 2;
     return 1;
   }
+
+  /**
+   * Get recent battle history for a specific user
+   */
+  async getBattleHistory(userId: string, skip = 0, take = 20) {
+    const battles = await this.prisma.battle.findMany({
+      where: {
+        OR: [
+          { user1Id: userId },
+          { user2Id: userId },
+        ],
+        battleEndAt: { not: null }, // Only finished battles
+      },
+      include: {
+        user1: {
+          select: { id: true, username: true, color: true },
+        },
+        user2: {
+          select: { id: true, username: true, color: true },
+        },
+      },
+      orderBy: { battleStartAt: 'desc' },
+      skip,
+      take,
+    });
+
+    const total = await this.prisma.battle.count({
+      where: {
+        OR: [
+          { user1Id: userId },
+          { user2Id: userId },
+        ],
+        battleEndAt: { not: null },
+      },
+    });
+
+    // Format the result for the frontend
+    const history = battles.map((battle) => {
+      const isUser1 = battle.user1Id === userId;
+      const opponent = isUser1 ? battle.user2 : battle.user1;
+      
+      let result: 'WIN' | 'LOSS' | 'DRAW' = 'DRAW';
+      if (battle.winnerId === userId) {
+        result = 'WIN';
+      } else if (battle.winnerId) {
+        result = 'LOSS';
+      }
+
+      return {
+        id: battle.id,
+        opponent: {
+          userId: opponent.id,
+          username: opponent.username,
+          color: opponent.color,
+        },
+        result,
+        startedAt: battle.battleStartAt,
+        endedAt: battle.battleEndAt,
+      };
+    });
+
+    return {
+      data: history,
+      total,
+      skip,
+      take,
+    };
+  }
 }
