@@ -3,9 +3,10 @@ import { BattleService } from './battle.service';
 import { BattleController } from './battle.controller';
 import { BattleGateway } from './battle.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
+import { FriendModule } from '../friend/friend.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, FriendModule],
   providers: [BattleService, BattleGateway],
   controllers: [BattleController],
   exports: [BattleService],
