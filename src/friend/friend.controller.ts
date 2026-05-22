@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { FriendService } from './friend.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -19,6 +20,7 @@ export class FriendController {
   @Post('request/:id')
   @ApiOperation({ summary: 'Send a friend request' })
   @ApiCreatedResponse({ description: 'Friend request sent successfully.' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   sendRequest(@Request() req: { user: { id: string } }, @Param('id') receiverId: string) {
     return this.friendService.sendFriendRequest(req.user.id, receiverId);
   }

@@ -12,6 +12,7 @@ import { CreateAuthWithOtpDto, createOtpDto } from './dto/create-auth.dto';
 
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { AuthGuard } from './guards/auth.guard';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiOperation,
   ApiTags,
@@ -35,6 +36,7 @@ export class AuthController {
     },
   })
   @ApiBadRequestResponse({ description: 'Bad Request.' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('signup')
   create(@Body() createAuthDto: CreateAuthWithOtpDto) {
     return this.authService.create(createAuthDto);
@@ -42,6 +44,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Request Registration OTP' })
   @ApiCreatedResponse({ description: 'OTP sent successfully.' })
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('signup-otp')
   createWithOtp(@Body() createAuthWithOtpDto: createOtpDto) {
     return this.authService.emailconfirmation(createAuthWithOtpDto);
@@ -58,6 +61,7 @@ export class AuthController {
     },
   })
   @ApiBadRequestResponse({ description: 'Invalid credentials.' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('signin')
   signIn(@Body() loginAuthDto: LoginAuthDto) {
     return this.authService.signIn(loginAuthDto);
