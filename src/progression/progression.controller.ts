@@ -52,6 +52,13 @@ export class ProgressionController {
     return this.progressionService.getAllRanks();
   }
 
+  @Get('leaderboard')
+  @ApiOperation({ summary: 'Get global top 10 players by XP and Rank' })
+  @ApiOkResponse({ description: 'Leaderboards retrieved successfully.' })
+  getLeaderboard() {
+    return this.progressionService.getLeaderboard();
+  }
+
   // --- Admin Endpoints ---
 
   @UseGuards(AuthGuard, RolesGuard)
