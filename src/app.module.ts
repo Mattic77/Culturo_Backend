@@ -15,10 +15,18 @@ import { ProgressionModule } from './progression/progression.module';
 import { BattleModule } from './battle/battle.module';
 import { AdminModule } from './admin/admin.module';
 import { FriendModule } from './friend/friend.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute globally
+      },
+    ]),
     AuthModule,
     UserModule,
     PrismaModule,
@@ -34,6 +42,12 @@ import { FriendModule } from './friend/friend.module';
     FriendModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
