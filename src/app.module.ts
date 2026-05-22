@@ -12,6 +12,7 @@ import { CountryModule } from './country/country.module';
 import { QuizModule } from './quiz/quiz.module';
 import { GameModule } from './game/game.module';
 import { ProgressionModule } from './progression/progression.module';
+import { BattleModule } from './battle/battle.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ProgressionModule } from './progression/progression.module';
     QuizModule,
     GameModule,
     ProgressionModule,
+    BattleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
