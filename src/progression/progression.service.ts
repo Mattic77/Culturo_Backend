@@ -61,6 +61,52 @@ export class ProgressionService {
   }
 
   /**
+   * Get global leaderboards (Top 10 by XP and Top 10 by Rank Points)
+   */
+  async getLeaderboard() {
+    const [topByXP, topByRank] = await Promise.all([
+      // Top 10 by Level/XP
+      this.prisma.userLevel.findMany({
+        take: 10,
+        orderBy: { xp: 'desc' },
+        include: {
+          user: {
+            select: { username: true, color: true },
+          },
+        },
+      }),
+      // Top 10 by Online Rank Points
+      this.prisma.userRankOnline.findMany({
+        take: 10,
+        orderBy: { points: 'desc' },
+        include: {
+          user: {
+            select: { username: true, color: true },
+          },
+          rank: true,
+        },
+      }),
+    ]);
+
+    return {
+      topByXP: topByXP.map((entry) => ({
+        userId: entry.userId,
+        username: entry.user.username,
+        color: entry.user.color,
+        level: entry.level,
+        xp: entry.xp,
+      })),
+      topByRank: topByRank.map((entry) => ({
+        userId: entry.userId,
+        username: entry.user.username,
+        color: entry.user.color,
+        points: entry.points,
+        rank: entry.rank,
+      })),
+    };
+  }
+
+  /**
    * Create a new rank (Admin only)
    */
   async createRank(data: { name: string; minScore: number; maxScore: number }) {
