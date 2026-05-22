@@ -7,11 +7,8 @@ import {
   OnGatewayDisconnect,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Namespace, Socket } from 'socket.io';
-import { BattleService, WaitingPlayer } from './battle.service';
-import { UseGuards } from '@nestjs/common';
-// Note: You'll need to create a WsAuthGuard later to handle JWT in WebSockets
-// For now, we'll implement a basic connection handler
+import { Server, Socket } from 'socket.io';
+import { BattleService, WaitingPlayer, BattleState } from './battle.service';
 
 @WebSocketGateway({
   cors: {
@@ -21,7 +18,7 @@ import { UseGuards } from '@nestjs/common';
 })
 export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Namespace;
+  server: Server;
 
   constructor(private readonly battleService: BattleService) {}
 
@@ -31,21 +28,9 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    // Use a custom property or token to identify the user
     const userId = client.handshake.query.userId as string;
     if (userId) {
       this.battleService.removeFromQueue(userId);
-      void this.battleService.handlePlayerDisconnect(userId).then((battle) => {
-        if (battle) {
-          const roomId = `battle_${battle.id}`;
-          this.server.to(roomId).emit('battle_ended', {
-            battleId: battle.id,
-            winnerId: battle.winnerId,
-            battleEndAt: battle.battleEndAt,
-          });
-          console.log(`Battle ${battle.id} ended. Winner: ${battle.winnerId}`);
-        }
-      });
     }
   }
 
@@ -62,76 +47,148 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
 
     this.battleService.addToQueue(player);
-    console.log(`Player ${data.username} joined the queue`);
-
-    // Emit confirmation
     client.emit('queue_joined', { message: 'Searching for an opponent...' });
-
-    // Try to match
     this.tryMatch();
   }
 
   private async tryMatch() {
-    console.log('Checking for match...');
     const match = this.battleService.findMatch();
     if (match) {
       const { player1, player2 } = match;
-      console.log(
-        `Found match between ${player1.username} and ${player2.username}`,
-      );
 
-      try {
-        // Create battle in DB
-        const battle = await this.battleService.createBattle(
-          player1.userId,
-          player2.userId,
-        );
-        console.log(`Battle created in DB with ID: ${battle.id}`);
+      // Initialize battle logic
+      const state = await this.battleService.initializeBattle(player1, player2);
 
-        // Create a unique room for this battle
-        const roomId = `battle_${battle.id}`;
+      // Fix Socket.io v4 access with casting to bypass type issues
+      const socket1 = (this.server.sockets as any).get(player1.socketId) as Socket;
+      const socket2 = (this.server.sockets as any).get(player2.socketId) as Socket;
 
-        this.battleService.registerBattle(
-          battle.id,
-          player1.userId,
-          player2.userId,
-          roomId,
-        );
+      if (socket1) socket1.join(state.roomId);
+      if (socket2) socket2.join(state.roomId);
 
-        const socket1 = this.server.sockets.get(player1.socketId);
-        const socket2 = this.server.sockets.get(player2.socketId);
+      // Notify players
+      this.server.to(state.roomId).emit('match_found', {
+        battleId: state.battleId,
+        roomId: state.roomId,
+        players: state.players.map(p => ({ userId: p.userId, username: p.username })),
+      });
 
-        if (socket1) {
-          socket1.join(roomId);
-          console.log(`Socket 1 (${player1.username}) joined room ${roomId}`);
-        } else {
-          console.error(`Socket 1 not found for ID: ${player1.socketId}`);
-        }
-
-        if (socket2) {
-          socket2.join(roomId);
-          console.log(`Socket 2 (${player2.username}) joined room ${roomId}`);
-        } else {
-          console.error(`Socket 2 not found for ID: ${player2.socketId}`);
-        }
-
-        // Notify players
-        const payload = {
-          battleId: battle.id,
-          roomId,
-          players: [
-            { userId: player1.userId, username: player1.username },
-            { userId: player2.userId, username: player2.username },
-          ],
-        };
-
-        console.log(`Emitting match_found to room ${roomId}`);
-        this.server.to(roomId).emit('match_found', payload);
-      } catch (error) {
-        console.error('Error creating battle or joining room:', error);
-      }
-    } else {
-      console.log('No match found yet.');
+      // Start the battle automatically after 3 seconds
+      setTimeout(() => {
+        this.startBattle(state.roomId);
+      }, 3000);
     }
+  }
+
+  private startBattle(roomId: string) {
+    const state = this.battleService.getBattleState(roomId);
+    if (!state) return;
+
+    state.status = 'IN_PROGRESS';
+    this.battleService.updateBattleState(roomId, state);
+
+    this.server.to(roomId).emit('battle_started', { message: 'Battle is starting!' });
+    this.sendNextQuestion(roomId);
+  }
+
+  private sendNextQuestion(roomId: string) {
+    const state = this.battleService.getBattleState(roomId);
+    if (!state || state.status !== 'IN_PROGRESS') return;
+
+    if (state.currentQuestionIndex >= state.questions.length) {
+      this.finishBattle(roomId);
+      return;
+    }
+
+    const question = state.questions[state.currentQuestionIndex];
+    // Remove answer before sending
+    const { answer, ...safeQuestion } = question;
+
+    state.roundStartTime = Date.now();
+    state.players.forEach(p => p.hasAnswered = false);
+    this.battleService.updateBattleState(roomId, state);
+
+    this.server.to(roomId).emit('new_question', {
+      question: safeQuestion,
+      questionNumber: state.currentQuestionIndex + 1,
+      totalQuestions: state.questions.length,
+    });
+  }
+
+  @SubscribeMessage('submit_answer')
+  async handleSubmitAnswer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: string; answer: string },
+  ) {
+    const state = this.battleService.getBattleState(data.roomId);
+    if (!state || state.status !== 'IN_PROGRESS') return;
+
+    const player = state.players.find(p => p.socketId === client.id);
+    if (!player || player.hasAnswered) return;
+
+    const timeTaken = Date.now() - state.roundStartTime;
+    const currentQuestion = state.questions[state.currentQuestionIndex];
+    
+    // Safety check for question
+    if (!currentQuestion) return;
+
+    const isCorrect = currentQuestion.answer.toLowerCase().trim() === data.answer.toLowerCase().trim();
+
+    const points = this.battleService.calculatePoints(isCorrect, timeTaken);
+    player.score += points;
+    player.hasAnswered = true;
+
+    this.battleService.updateBattleState(data.roomId, state);
+
+    // Notify the player individually about their result
+    client.emit('answer_result', { isCorrect, points, currentScore: player.score });
+
+    // Check if both players answered
+    const allAnswered = state.players.every(p => p.hasAnswered);
+    if (allAnswered) {
+      this.proceedToNextRound(data.roomId);
+    }
+  }
+
+  private proceedToNextRound(roomId: string) {
+    const state = this.battleService.getBattleState(roomId);
+    if (!state) return;
+
+    // Send intermediate scores to both
+    this.server.to(roomId).emit('round_ended', {
+      scores: state.players.map(p => ({ username: p.username, score: p.score })),
+      correctAnswer: state.questions[state.currentQuestionIndex].answer
+    });
+
+    state.currentQuestionIndex++;
+    this.battleService.updateBattleState(roomId, state);
+
+    // Brief pause before next question
+    setTimeout(() => {
+      this.sendNextQuestion(roomId);
+    }, 2000);
+  }
+
+  private async finishBattle(roomId: string) {
+    const state = this.battleService.getBattleState(roomId);
+    if (!state) return;
+
+    state.status = 'FINISHED';
+    
+    // Determine winner
+    const p1 = state.players[0];
+    const p2 = state.players[1];
+    let winnerId: string | null = null;
+    if (p1.score > p2.score) winnerId = p1.userId;
+    else if (p2.score > p1.score) winnerId = p2.userId;
+
+    await this.battleService.finalizeBattle(state.battleId, winnerId);
+
+    this.server.to(roomId).emit('battle_finished', {
+      winnerId,
+      finalScores: state.players.map(p => ({ userId: p.userId, username: p.username, score: p.score })),
+    });
+
+    this.battleService.removeBattleState(roomId);
   }
 }
