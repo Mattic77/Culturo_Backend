@@ -144,6 +144,7 @@ model Continent {
 
 model Category {
   id             String         @id @default(uuid())
+  incid          Int            @unique @default(autoincrement())
   name           String         @unique
   icon           String?
   games          Games[]
