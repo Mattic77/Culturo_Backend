@@ -8,9 +8,10 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { BattleService, WaitingPlayer } from './battle.service';
+import { BattleService, WaitingPlayer, BattleState } from './battle.service';
 import { UseGuards } from '@nestjs/common';
 import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
+import { FriendService } from '../friend/friend.service';
 
 @WebSocketGateway({
   cors: {
@@ -22,17 +23,52 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly battleService: BattleService) {}
+  private onlineUsers = new Map<string, string>(); // userId -> socketId
+
+  constructor(
+    private readonly battleService: BattleService,
+    private readonly friendService: FriendService,
+  ) {}
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    const userId = client.handshake.query.userId as string;
+    if (userId) {
+      this.onlineUsers.set(userId, client.id);
+      console.log(`User ${userId} connected with socket ${client.id}`);
+    }
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
-    const user = client.data.user;
+    const user = client.data?.user;
     if (user?.id) {
+      this.onlineUsers.delete(user.id);
       this.battleService.removeFromQueue(user.id);
+    }
+  }
+
+  @UseGuards(WsAuthGuard)
+  @SubscribeMessage('send_invite')
+  async handleSendInvite(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { receiverId: string; senderUsername: string },
+  ) {
+    const user = client.data.user;
+
+    try {
+      const invite = await this.friendService.createBattleInvite(user.id, data.receiverId);
+
+      const receiverSocketId = this.onlineUsers.get(data.receiverId);
+      if (receiverSocketId) {
+        this.server.to(receiverSocketId).emit('invite_received', {
+          inviteId: invite.id,
+          senderId: user.id,
+          senderUsername: data.senderUsername,
+        });
+      }
+
+      return { status: 'SENT', inviteId: invite.id };
+    } catch (error) {
+      return { status: 'ERROR', message: error.message };
     }
   }
 
@@ -64,9 +100,8 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Initialize battle logic
       const state = await this.battleService.initializeBattle(player1, player2);
 
-      // Fix Socket.io v4 access with casting to bypass type issues
-      const socket1 = (this.server.sockets as any).get(player1.socketId) as Socket;
-      const socket2 = (this.server.sockets as any).get(player2.socketId) as Socket;
+      const socket1 = this.server.sockets.get(player1.socketId);
+      const socket2 = this.server.sockets.get(player2.socketId);
 
       if (socket1) socket1.join(state.roomId);
       if (socket2) socket2.join(state.roomId);

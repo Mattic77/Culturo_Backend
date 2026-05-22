@@ -14,6 +14,7 @@ import { GameModule } from './game/game.module';
 import { ProgressionModule } from './progression/progression.module';
 import { BattleModule } from './battle/battle.module';
 import { AdminModule } from './admin/admin.module';
+import { FriendModule } from './friend/friend.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AdminModule } from './admin/admin.module';
     ProgressionModule,
     BattleModule,
     AdminModule,
+    FriendModule,
   ],
   controllers: [AppController],
   providers: [AppService],
