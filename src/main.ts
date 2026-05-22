@@ -9,6 +9,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
 
+  // Enable CORS for frontend access
+  app.enableCors({
+    origin: true, // Allows all origins or specific one if you provide a string/array
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Culturo API')
     .setDescription('The Culturo API documentation')
