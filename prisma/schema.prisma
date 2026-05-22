@@ -35,8 +35,51 @@ model User {
   rankOnline     UserRankOnline[]
   gameSessions   GameSession[]
   stat           UserStat?
+  sentRequests     Friendship[] @relation("SentRequests")
+  receivedRequests Friendship[] @relation("ReceivedRequests")
+  sentInvites     BattleInvite[] @relation("SentInvites")
+  receivedInvites BattleInvite[] @relation("ReceivedInvites")
 
   @@map("user")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+model Friendship {
+  id        String           @id @default(uuid())
+  senderId  String           @map("sender_id")
+  receiverId String           @map("receiver_id")
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  sender    User             @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User             @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@map("friendship")
+}
+
+model BattleInvite {
+  id         String   @id @default(uuid())
+  senderId   String   @map("sender_id")
+  receiverId String   @map("receiver_id")
+  status     InviteStatus @default(PENDING)
+  createdAt  DateTime @default(now()) @map("created_at")
+  sender     User     @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("battle_invite")
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
 }
 
 enum SessionStatus {
