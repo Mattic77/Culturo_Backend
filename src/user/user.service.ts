@@ -150,6 +150,48 @@ export class UserService {
     }
   }
 
+  /**
+   * Update user type (Admin only)
+   */
+  async updateUserType(userId: string, userType: any) {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { userType },
+      });
+      return { message: 'User role updated successfully', userType: user.userType };
+    } catch (error) {
+      throw new HttpException('Failed to update user role', 400);
+    }
+  }
+
+  /**
+   * Get platform-wide user statistics (Admin only)
+   */
+  async getAdminStats() {
+    const [totalUsers, activeToday, newThisWeek] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: {
+          updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+        },
+      }),
+    ]);
+
+    return {
+      totalUsers,
+      activeToday,
+      newThisWeek,
+    };
+  }
+
   async getAllUsers(skip = 0, take = 10) {
     const users = await this.prisma.user.findMany({
       skip,
@@ -158,9 +200,12 @@ export class UserService {
         id: true,
         email: true,
         username: true,
+        userType: true,
         createdAt: true,
         updatedAt: true,
+        userLevel: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     const total = await this.prisma.user.count();
