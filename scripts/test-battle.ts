@@ -3,82 +3,97 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-async function testBattle() {
+async function testFullBattle() {
   const SERVER_URL = 'http://localhost:3000/battle';
 
   console.log('🚀 Initializing Test Environment...');
-  
-  // Use NestFactory to get the PrismaService with the correct configuration
   const app = await NestFactory.createApplicationContext(AppModule);
   const prisma = app.get(PrismaService);
 
-  console.log('⚔️  Starting Battle Matchmaking Test...');
+  console.log('⚔️  Starting Full Battle Simulation...');
 
   try {
-    // 1. Fetch two real users from the database
     const users = await prisma.user.findMany({
       take: 2,
       select: { id: true, username: true }
     });
 
     if (users.length < 2) {
-      console.error('❌ Error: Need at least 2 users in the database to run this test.');
+      console.error('❌ Error: Need at least 2 users.');
       process.exit(1);
     }
 
     const user1 = { userId: users[0].id, username: users[0].username };
     const user2 = { userId: users[1].id, username: users[1].username };
 
-    console.log(`👤 Testing with: ${user1.username} and ${user2.username}`);
+    console.log(`👤 Players: ${user1.username} vs ${user2.username}`);
 
-    // 2. Connect both users
     const socket1: Socket = io(SERVER_URL, { query: { userId: user1.userId } });
     const socket2: Socket = io(SERVER_URL, { query: { userId: user2.userId } });
 
-    const connectSocket = (socket: Socket, name: string) => {
-      return new Promise<void>((resolve) => {
-        socket.on('connect', () => {
-          console.log(`✅ ${name} connected (ID: ${socket.id})`);
-          resolve();
-        });
+    let currentRoomId = '';
+
+    const setupPlayer = (socket: Socket, user: any, name: string) => {
+      socket.on('connect', () => console.log(`✅ ${name} connected`));
+      
+      socket.on('match_found', (data) => {
+        console.log(`🎉 ${name}: Match Found! Room: ${data.roomId}`);
+        currentRoomId = data.roomId;
+      });
+
+      socket.on('battle_started', (data) => console.log(`🚀 ${name}: ${data.message}`));
+
+      socket.on('new_question', (data) => {
+        console.log(`❓ ${name}: Question ${data.questionNumber}/${data.totalQuestions}: ${data.question.question}`);
+        
+        // Simulate thinking time
+        const thinkingTime = Math.random() * 2000 + 1000; 
+        
+        setTimeout(() => {
+          // Always pick a random option or use the answer (50% chance correct)
+          const willBeCorrect = Math.random() > 0.5;
+          const answer = willBeCorrect ? 'correct_answer_placeholder' : 'wrong'; 
+          
+          // In a real scenario we'd need the actual answer if we wanted to test "correctness" 
+          // but here we just want to see the flow. 
+          // Actually, the server doesn't send the answer, so we just send something.
+          socket.emit('submit_answer', { roomId: currentRoomId, answer: data.question.id }); // Just sending ID as dummy answer
+          console.log(`📤 ${name} submitted answer.`);
+        }, thinkingTime);
+      });
+
+      socket.on('answer_result', (data) => {
+        console.log(`📊 ${name}: Result -> ${data.isCorrect ? '✅' : '❌'} (+${data.points} pts). Total: ${data.currentScore}`);
+      });
+
+      socket.on('round_ended', (data) => {
+        console.log(`🔔 Round Ended. Correct Answer: ${data.correctAnswer}`);
+      });
+
+      socket.on('battle_finished', (data) => {
+        console.log(`🏆 ${name}: Battle Finished! Winner ID: ${data.winnerId}`);
+        console.log('Final Scores:', JSON.stringify(data.finalScores, null, 2));
       });
     };
 
-    await Promise.all([
-      connectSocket(socket1, 'Player 1'),
-      connectSocket(socket2, 'Player 2'),
-    ]);
+    setupPlayer(socket1, user1, 'Player 1');
+    setupPlayer(socket2, user2, 'Player 2');
 
-    // 3. Listen for matchmaking events
-    socket1.on('queue_joined', (data) => console.log(`📩 Player 1: ${data.message}`));
-    socket2.on('queue_joined', (data) => console.log(`📩 Player 2: ${data.message}`));
-
-    socket1.on('match_found', (data) => {
-      console.log('🎉 Player 1: Match Found!');
-      console.log('📦 Battle Data:', JSON.stringify(data, null, 2));
-    });
-
-    socket2.on('match_found', (data) => {
-      console.log('🎉 Player 2: Match Found!');
-    });
-
-    // 4. Join queue
-    console.log('🚀 Both players joining the queue...');
-    socket1.emit('join_queue', user1);
-    
-    // Small delay to simulate real user behavior
+    // Start
     setTimeout(() => {
+      console.log('🚀 Joining queue...');
+      socket1.emit('join_queue', user1);
       socket2.emit('join_queue', user2);
-    }, 500);
+    }, 1000);
 
-    // 5. Keep script alive for a few seconds to see the match
+    // Keep alive for the whole game (15 questions * ~5s each = 75s)
     setTimeout(async () => {
-      console.log('🏁 Test finished. Closing connections.');
+      console.log('🏁 Simulation Timeout. Closing.');
       socket1.disconnect();
       socket2.disconnect();
       await app.close();
       process.exit(0);
-    }, 5000);
+    }, 120000); // 2 minutes max
 
   } catch (error) {
     console.error('❌ Test failed:', error);
@@ -87,4 +102,4 @@ async function testBattle() {
   }
 }
 
-testBattle();
+testFullBattle();

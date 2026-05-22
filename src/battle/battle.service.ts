@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Difficulty } from '@prisma/client';
 
 export interface WaitingPlayer {
   userId: string;
@@ -9,20 +8,26 @@ export interface WaitingPlayer {
   joinedAt: Date;
 }
 
-export interface ActiveBattle {
+export interface BattleState {
   battleId: string;
-  user1Id: string;
-  user2Id: string;
   roomId: string;
-  ended: boolean;
+  players: {
+    userId: string;
+    socketId: string;
+    username: string;
+    score: number;
+    hasAnswered: boolean;
+  }[];
+  questions: any[];
+  currentQuestionIndex: number;
+  roundStartTime: number;
+  status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
 }
 
 @Injectable()
 export class BattleService {
   private matchmakingQueue: WaitingPlayer[] = [];
-  private activeBattles = new Map<string, ActiveBattle>();
-  private battleByUserId = new Map<string, string>();
-  private readonly battleWinXp = 50;
+  private activeBattles = new Map<string, BattleState>(); // roomId -> battleState
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -30,26 +35,21 @@ export class BattleService {
    * Add a player to the matchmaking queue
    */
   addToQueue(player: WaitingPlayer): void {
-    // Check if player is already in queue
-    const exists = this.matchmakingQueue.find(
-      (p) => p.userId === player.userId,
-    );
+    const exists = this.matchmakingQueue.find((p) => p.userId === player.userId);
     if (!exists) {
       this.matchmakingQueue.push(player);
     }
   }
 
   /**
-   * Remove a player from the queue (e.g., on disconnect)
+   * Remove a player from the queue
    */
   removeFromQueue(userId: string): void {
-    this.matchmakingQueue = this.matchmakingQueue.filter(
-      (p) => p.userId !== userId,
-    );
+    this.matchmakingQueue = this.matchmakingQueue.filter((p) => p.userId !== userId);
   }
 
   /**
-   * Try to find a match for players in the queue
+   * Try to find a match
    */
   findMatch(): { player1: WaitingPlayer; player2: WaitingPlayer } | null {
     if (this.matchmakingQueue.length >= 2) {
@@ -64,83 +64,109 @@ export class BattleService {
   }
 
   /**
-   * Initialize a battle in the database
+   * Initialize a battle in the database and pick questions
    */
-  async createBattle(user1Id: string, user2Id: string) {
-    return this.prisma.battle.create({
+  async initializeBattle(player1: WaitingPlayer, player2: WaitingPlayer) {
+    // 1. Pick 15 random questions
+    const quizzes = await this.prisma.$queryRawUnsafe<any[]>(`
+      SELECT id, question, answer, suggested_answer as "suggestedAnswer", category_id as "categoryId", country_id as "countryId"
+      FROM quiz
+      ORDER BY RANDOM()
+      LIMIT 15
+    `);
+
+    // 2. Create battle in DB
+    const battle = await this.prisma.battle.create({
       data: {
-        user1Id,
-        user2Id,
+        user1Id: player1.userId,
+        user2Id: player2.userId,
       },
     });
-  }
 
-  registerBattle(
-    battleId: string,
-    user1Id: string,
-    user2Id: string,
-    roomId: string,
-  ): void {
-    const battleState: ActiveBattle = {
-      battleId,
-      user1Id,
-      user2Id,
+    const roomId = `battle_${battle.id}`;
+
+    // 3. Create active state
+    const state: BattleState = {
+      battleId: battle.id,
       roomId,
-      ended: false,
+      players: [
+        { ...player1, score: 0, hasAnswered: false },
+        { ...player2, score: 0, hasAnswered: false },
+      ],
+      questions: quizzes,
+      currentQuestionIndex: 0,
+      roundStartTime: 0,
+      status: 'WAITING',
     };
 
-    this.activeBattles.set(battleId, battleState);
-    this.battleByUserId.set(user1Id, battleId);
-    this.battleByUserId.set(user2Id, battleId);
+    this.activeBattles.set(roomId, state);
+    return state;
   }
 
-  async handlePlayerDisconnect(userId: string) {
-    const battleId = this.battleByUserId.get(userId);
-    if (!battleId) {
-      return null;
-    }
+  getBattleState(roomId: string): BattleState | undefined {
+    return this.activeBattles.get(roomId);
+  }
 
-    const battleState = this.activeBattles.get(battleId);
-    if (!battleState || battleState.ended) {
-      this.battleByUserId.delete(userId);
-      return null;
-    }
+  updateBattleState(roomId: string, state: BattleState): void {
+    this.activeBattles.set(roomId, state);
+  }
 
-    const winnerId =
-      battleState.user1Id === userId
-        ? battleState.user2Id
-        : battleState.user1Id;
+  removeBattleState(roomId: string): void {
+    this.activeBattles.delete(roomId);
+  }
 
-    battleState.ended = true;
-    this.activeBattles.delete(battleId);
-    this.battleByUserId.delete(battleState.user1Id);
-    this.battleByUserId.delete(battleState.user2Id);
+  /**
+   * Calculate points based on speed and correctness
+   */
+  calculatePoints(isCorrect: boolean, timeTakenMs: number): number {
+    if (!isCorrect) return 0;
+    
+    // Base points for correct answer
+    const basePoints = 100;
+    
+    // Speed bonus: 10 seconds (10000ms) max. 
+    // Faster answer = more bonus.
+    const maxBonus = 50;
+    const speedBonus = Math.max(0, Math.floor(((10000 - timeTakenMs) / 10000) * maxBonus));
+    
+    return basePoints + speedBonus;
+  }
 
-    const updatedBattle = await this.prisma.battle.update({
+  /**
+   * Finalize battle in DB and award rewards
+   */
+  async finalizeBattle(battleId: string, winnerId: string | null) {
+    const battle = await this.prisma.battle.update({
       where: { id: battleId },
       data: {
         winnerId,
         battleEndAt: new Date(),
       },
+      include: {
+        user1: { include: { userLevel: true } },
+        user2: { include: { userLevel: true } },
+      }
     });
 
-    await this.awardBattleWinnerXp(winnerId);
-
-    return updatedBattle;
-  }
-
-  private async awardBattleWinnerXp(userId: string) {
-    let userLevel = await this.prisma.userLevel.findUnique({
-      where: { userId },
-    });
-
-    if (!userLevel) {
-      userLevel = await this.prisma.userLevel.create({
-        data: { userId, xp: 0, level: 1 },
-      });
+    // Award XP: 100 for winner, 20 for loser, 50 for draw
+    if (winnerId) {
+      const loserId = battle.user1Id === winnerId ? battle.user2Id : battle.user1Id;
+      await this.awardXp(winnerId, 100);
+      await this.awardXp(loserId, 20);
+    } else {
+      // Draw
+      await this.awardXp(battle.user1Id, 50);
+      await this.awardXp(battle.user2Id, 50);
     }
 
-    const newXp = userLevel.xp + this.battleWinXp;
+    return battle;
+  }
+
+  private async awardXp(userId: string, amount: number) {
+    const userLevel = await this.prisma.userLevel.findUnique({ where: { userId } });
+    if (!userLevel) return;
+
+    const newXp = userLevel.xp + amount;
     const newLevel = this.calculateLevel(newXp);
 
     await this.prisma.userLevel.update({
@@ -148,14 +174,17 @@ export class BattleService {
       data: {
         xp: newXp,
         level: newLevel,
-        isBattleUnlocked: newXp >= 1000 || userLevel.isBattleUnlocked,
-      },
+        isBattleUnlocked: newXp >= 1000 || userLevel.isBattleUnlocked
+      }
     });
   }
 
   private calculateLevel(xp: number): number {
-    if (xp >= 1000) return 3;
-    if (xp >= 500) return 2;
+    if (xp >= 5000) return 10;
+    if (xp >= 4000) return 8;
+    if (xp >= 3000) return 6;
+    if (xp >= 2000) return 4;
+    if (xp >= 1000) return 2;
     return 1;
   }
 }
