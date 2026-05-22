@@ -100,8 +100,9 @@ export class BattleGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Initialize battle logic
       const state = await this.battleService.initializeBattle(player1, player2);
 
-      const socket1 = this.server.sockets.get(player1.socketId);
-      const socket2 = this.server.sockets.get(player2.socketId);
+      // Fix Socket.io v4 access with casting to bypass type issues
+      const socket1 = (this.server.sockets as any).get(player1.socketId) as Socket;
+      const socket2 = (this.server.sockets as any).get(player2.socketId) as Socket;
 
       if (socket1) socket1.join(state.roomId);
       if (socket2) socket2.join(state.roomId);
