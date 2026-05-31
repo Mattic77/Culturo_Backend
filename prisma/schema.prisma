@@ -12,33 +12,33 @@ enum Usertype {
 }
 
 model User {
-  id             String            @id @default(uuid())
-  username       String?           @unique
-  email          String            @unique
-  password       String
-  dateOfBirth    DateTime?         @map("date_of_birth") @db.Date
-  isActivate     Boolean           @default(false) @map("is_activate")
-  color          String?           @default("#000000")
-  notification   Boolean           @default(true)
-  userType       Usertype          @default(user)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  battlesAsUser1 Battle[]          @relation("User1Battles")
-  battlesAsUser2 Battle[]          @relation("User2Battles")
-  battlesWon     Battle[]          @relation("WinnerBattles")
-  games          Games[]
-  tokens         Token[]
-  userCategories UserCategory[]
-  propriety      UserPropriety?
-  userLevel      UserLevel?
-  rankOffline    UserRankOffline[]
-  rankOnline     UserRankOnline[]
-  gameSessions   GameSession[]
-  stat           UserStat?
-  sentRequests     Friendship[] @relation("SentRequests")
-  receivedRequests Friendship[] @relation("ReceivedRequests")
-  sentInvites     BattleInvite[] @relation("SentInvites")
-  receivedInvites BattleInvite[] @relation("ReceivedInvites")
+  id               String            @id @default(uuid())
+  username         String?           @unique
+  email            String            @unique
+  password         String
+  dateOfBirth      DateTime?         @map("date_of_birth") @db.Date
+  isActivate       Boolean           @default(false) @map("is_activate")
+  color            String?           @default("#000000")
+  notification     Boolean           @default(true)
+  userType         Usertype          @default(user)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  battlesAsUser1   Battle[]          @relation("User1Battles")
+  battlesAsUser2   Battle[]          @relation("User2Battles")
+  battlesWon       Battle[]          @relation("WinnerBattles")
+  games            Games[]
+  tokens           Token[]
+  userCategories   UserCategory[]
+  propriety        UserPropriety?
+  userLevel        UserLevel?
+  rankOffline      UserRankOffline[]
+  rankOnline       UserRankOnline[]
+  gameSessions     GameSession[]
+  stat             UserStat?
+  sentRequests     Friendship[]      @relation("SentRequests")
+  receivedRequests Friendship[]      @relation("ReceivedRequests")
+  sentInvites      BattleInvite[]    @relation("SentInvites")
+  receivedInvites  BattleInvite[]    @relation("ReceivedInvites")
 
   @@map("user")
 }
@@ -50,27 +50,27 @@ enum FriendshipStatus {
 }
 
 model Friendship {
-  id        String           @id @default(uuid())
-  senderId  String           @map("sender_id")
+  id         String           @id @default(uuid())
+  senderId   String           @map("sender_id")
   receiverId String           @map("receiver_id")
-  status    FriendshipStatus @default(PENDING)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
-  sender    User             @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver  User             @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+  sender     User             @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User             @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
   @@map("friendship")
 }
 
 model BattleInvite {
-  id         String   @id @default(uuid())
-  senderId   String   @map("sender_id")
-  receiverId String   @map("receiver_id")
+  id         String       @id @default(uuid())
+  senderId   String       @map("sender_id")
+  receiverId String       @map("receiver_id")
   status     InviteStatus @default(PENDING)
-  createdAt  DateTime @default(now()) @map("created_at")
-  sender     User     @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User     @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  sender     User         @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User         @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@map("battle_invite")
 }
@@ -86,6 +86,59 @@ enum SessionStatus {
   ACTIVE
   COMPLETED
   ABANDONED
+}
+
+enum Theme {
+  TEAL
+  ROSE
+  BLUE
+  FOREST
+  EMERALD
+  MINT
+  AQUA
+  CYAN
+  SKY
+  NAVY
+  INDIGO
+  VIOLET
+  LAVENDER
+  PLUM
+  MAGENTA
+  PINK
+  CORAL
+  PEACH
+  SALMON
+  RED
+  CRIMSON
+  BURGUNDY
+  MAROON
+  ORANGE
+  AMBER
+  GOLD
+  YELLOW
+  LIME
+  OLIVE
+  MOSS
+  SAGE
+  MINT_CREAM
+  STONE
+  SLATE
+  GRAY
+  CHARCOAL
+  BLACK
+  WHITE
+  IVORY
+  BEIGE
+  SAND
+  COCOA
+  CHESTNUT
+  RUST
+  COPPER
+  BRONZE
+  SILVER
+  PEARL
+  OCEAN
+  SUNSET
 }
 
 model GameSession {
@@ -105,14 +158,14 @@ model GameSession {
 }
 
 model GameSessionQuestion {
-  id          String      @id @default(uuid())
-  sessionId   String      @map("session_id")
-  quizId      String      @map("quiz_id")
-  order       Int
-  isAnswered  Boolean     @default(false) @map("is_answered")
-  isCorrect   Boolean     @default(false) @map("is_correct")
-  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  quiz        Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id         String      @id @default(uuid())
+  sessionId  String      @map("session_id")
+  quizId     String      @map("quiz_id")
+  order      Int
+  isAnswered Boolean     @default(false) @map("is_answered")
+  isCorrect  Boolean     @default(false) @map("is_correct")
+  session    GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  quiz       Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@map("game_session_question")
@@ -190,10 +243,11 @@ model Category {
   incid          Int            @unique @default(autoincrement())
   name           String         @unique
   icon           String?
+  theme        Theme          @default(TEAL)
   games          Games[]
   quizzes        Quiz[]
   userCategories UserCategory[]
-  
+
   @@map("category")
 }
 
@@ -213,15 +267,15 @@ model UserCategory {
 }
 
 model Quiz {
-  id              String     @id @default(uuid())
-  categoryId      String     @map("category_id")
-  countryId       String?    @map("country_id")
-  difficulty      Difficulty @default(Easy)
-  question        String
-  answer          String
-  suggestedAnswer Json?      @map("suggested_answer")
-  category        Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  country         Country?   @relation(fields: [countryId], references: [id])
+  id               String                @id @default(uuid())
+  categoryId       String                @map("category_id")
+  countryId        String?               @map("country_id")
+  difficulty       Difficulty            @default(Easy)
+  question         String
+  answer           String
+  suggestedAnswer  Json?                 @map("suggested_answer")
+  category         Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  country          Country?              @relation(fields: [countryId], references: [id])
   sessionQuestions GameSessionQuestion[]
 
   @@index([categoryId])

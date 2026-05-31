@@ -4,6 +4,8 @@ export class AuthEmail {
   private static getTransporter() {
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASSWORD;
+    const host = process.env.SMTP_HOST ?? 'smtp.gmail.com';
+    const port = Number.parseInt(process.env.SMTP_PORT ?? '587', 10);
 
     if (!user || !pass) {
       throw new Error(
@@ -12,10 +14,15 @@ export class AuthEmail {
     }
 
     return nodemailer.createTransport({
-      service: 'gmail',
+      host,
+      port,
+      secure: port === 465,
       auth: {
         user,
         pass,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
   }
