@@ -243,6 +243,7 @@ model Category {
   incid          Int            @unique @default(autoincrement())
   name           String         @unique
   icon           String?
+  description    String?
   theme        Theme          @default(TEAL)
   games          Games[]
   quizzes        Quiz[]

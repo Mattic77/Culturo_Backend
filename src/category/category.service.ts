@@ -55,7 +55,20 @@ export class CategoryService {
 
   async findAll() {
     try {
-      return await this.prisma.category.findMany();
+      const quizQuantities = await this.prisma.quiz.groupBy({
+        by: ['categoryId'],
+        _count: { id: true },
+      });
+      const categories = await this.prisma.category.findMany();
+      return categories.map((category) => {
+        const quizquantity =
+          quizQuantities.find((q) => q.categoryId === category.id)?._count.id ||
+          0;
+        return {
+          ...category,
+          quizquantity,
+        };
+      });
     } catch (error) {
       throw new HttpException(
         'Failed to fetch categories',
