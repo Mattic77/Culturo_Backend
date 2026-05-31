@@ -1,11 +1,10 @@
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 export class AuthEmail {
   private static getTransporter() {
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASSWORD;
-    const host = process.env.SMTP_HOST ?? 'smtp.gmail.com';
-    const port = Number.parseInt(process.env.SMTP_PORT ?? '587', 10);
 
     if (!user || !pass) {
       throw new Error(
@@ -13,11 +12,10 @@ export class AuthEmail {
       );
     }
 
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      family: 4,
+    const transportOptions: SMTPTransport.Options = {
+      host: process.env.SMTP_HOST ?? 'smtp.gmail.com',
+      port: Number.parseInt(process.env.SMTP_PORT ?? '587', 10),
+      secure: false,
       auth: {
         user,
         pass,
@@ -25,7 +23,10 @@ export class AuthEmail {
       tls: {
         rejectUnauthorized: false,
       },
-    });
+      requireTLS: true,
+    };
+
+    return nodemailer.createTransport(transportOptions);
   }
 
   private static getFromEmail() {
