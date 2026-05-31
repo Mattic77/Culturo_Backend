@@ -1,10 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { Usertype, Continent, Difficulty } from '@prisma/client';
+import { Usertype, Continent, Difficulty, Theme } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+type RestCountry = {
+  name: { common: string };
+  flags: { png?: string; svg?: string };
+  continents: string[];
+};
 
 async function main() {
   console.log('Start seeding...');
@@ -18,42 +24,56 @@ async function main() {
       {
         name: 'History',
         icon: 'https://res.cloudinary.com/demo/image/upload/v1631234567/history_icon.png',
+        subtitle: 'Past moments',
+        description: 'Past events',
+        theme: Theme.ROSE,
       },
       {
         name: 'Science',
         icon: 'https://res.cloudinary.com/demo/image/upload/v1631234567/science_icon.png',
+        subtitle: 'Curious minds',
+        description: 'Science facts',
+        theme: Theme.TEAL,
       },
       {
         name: 'Geography',
         icon: 'https://res.cloudinary.com/demo/image/upload/v1631234567/geography_icon.png',
+        subtitle: 'World places',
+        description: 'World locations',
+        theme: Theme.FOREST,
       },
       {
         name: 'Sports',
         icon: 'https://res.cloudinary.com/demo/image/upload/v1631234567/sports_icon.png',
+        subtitle: 'Game spirit',
+        description: 'Sports facts',
+        theme: Theme.BLUE,
       },
       {
         name: 'Art',
         icon: 'https://res.cloudinary.com/demo/image/upload/v1631234567/art_icon.png',
+        subtitle: 'Creative flow',
+        description: 'Creative expression',
+        theme: Theme.VIOLET,
       },
     ];
 
     for (const category of categories) {
       await prisma.category.upsert({
         where: { name: category.name },
-        update: {},
+        update: {
+          icon: category.icon,
+          subtitle: category.subtitle,
+          description: category.description,
+          theme: category.theme,
+        },
         create: category,
       });
     }
     console.log('Categories seeded.');
 
     // --- Seed Continents ---
-    const continentNames = [
-      'Africa',
-      'Europe',
-      'Asia',
-      'Americas',
-      'Oceania',
-    ];
+    const continentNames = ['Africa', 'Europe', 'Asia', 'Americas', 'Oceania'];
 
     const seededContinents: Continent[] = [];
     for (const name of continentNames) {
@@ -68,17 +88,27 @@ async function main() {
 
     // --- Seed Countries from REST Countries API ---
     console.log('Fetching countries from REST Countries API...');
-    let apiCountries;
+    let apiCountries: RestCountry[] = [];
     try {
-      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,continents');
+      const response = await fetch(
+        'https://restcountries.com/v3.1/all?fields=name,flags,continents',
+      );
       if (!response.ok) {
         const text = await response.text();
-        console.error(`API Response not OK: ${response.status} ${response.statusText}`, text);
-        throw new Error(`Failed to fetch countries from API: ${response.status}`);
+        console.error(
+          `API Response not OK: ${response.status} ${response.statusText}`,
+          text,
+        );
+        throw new Error(
+          `Failed to fetch countries from API: ${response.status}`,
+        );
       }
-      apiCountries = await response.json();
+      apiCountries = (await response.json()) as RestCountry[];
     } catch (fetchError) {
-      console.error('Fetch operation failed:', fetchError.message);
+      console.error(
+        'Fetch operation failed:',
+        fetchError instanceof Error ? fetchError.message : fetchError,
+      );
       throw fetchError;
     }
 
@@ -93,7 +123,8 @@ async function main() {
       if (main === 'Africa') return africaId;
       if (main === 'Europe') return europeId;
       if (main === 'Asia') return asiaId;
-      if (main === 'North America' || main === 'South America') return americasId;
+      if (main === 'North America' || main === 'South America')
+        return americasId;
       if (main === 'Oceania' || main === 'Antarctic') return oceaniaId;
       return null;
     };
@@ -116,10 +147,18 @@ async function main() {
 
     // --- Seed Quizzes ---
     console.log('Seeding quizzes...');
-    const historyCategory = await prisma.category.findUnique({ where: { name: 'History' } });
-    const geographyCategory = await prisma.category.findUnique({ where: { name: 'Geography' } });
-    const morocco = await prisma.country.findUnique({ where: { name: 'Morocco' } });
-    const france = await prisma.country.findUnique({ where: { name: 'France' } });
+    const historyCategory = await prisma.category.findUnique({
+      where: { name: 'History' },
+    });
+    const geographyCategory = await prisma.category.findUnique({
+      where: { name: 'Geography' },
+    });
+    const morocco = await prisma.country.findUnique({
+      where: { name: 'Morocco' },
+    });
+    const france = await prisma.country.findUnique({
+      where: { name: 'France' },
+    });
 
     if (historyCategory && geographyCategory && morocco && france) {
       const quizzes = [
@@ -137,14 +176,18 @@ async function main() {
           difficulty: Difficulty.Medium,
           question: 'What is the largest city in France?',
           answer: 'Paris',
-          suggestedAnswer: { options: ['Lyon', 'Marseille', 'Paris', 'Bordeaux'] },
+          suggestedAnswer: {
+            options: ['Lyon', 'Marseille', 'Paris', 'Bordeaux'],
+          },
         },
         {
           categoryId: geographyCategory.id,
           difficulty: Difficulty.Hard,
           question: 'Which is the largest continent by area?',
           answer: 'Asia',
-          suggestedAnswer: { options: ['Africa', 'Asia', 'Europe', 'North America'] },
+          suggestedAnswer: {
+            options: ['Africa', 'Asia', 'Europe', 'North America'],
+          },
         },
       ];
 

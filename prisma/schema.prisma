@@ -242,6 +242,7 @@ model Category {
   id             String         @id @default(uuid())
   incid          Int            @unique @default(autoincrement())
   name           String         @unique
+  subtitle       String?
   icon           String?
   description    String?
   theme        Theme          @default(TEAL)
