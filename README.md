@@ -16,6 +16,7 @@ Built with **NestJS**, **TypeScript**, and **Prisma**, this backend provides a r
 - 🎮 **Game Engine**: Solo game sessions with difficulty levels (Easy, Medium, Hard) and real-time answer validation.
 - ⚔️ **Battle System**: 1v1 competitive matches with real-time WebSocket communication.
 - 🏆 **Progression & Rankings**: XP system, level unlocking, and global Online/Offline leaderboards.
+- 🤖 **AI Quiz Engine (RAG)**: Automated quiz generation using Retrieval-Augmented Generation (RAG) with vector search in PostgreSQL.
 - 📅 **Challenges**: Automated daily/monthly challenges with cron-based lifecycle management.
 - 🗺️ **World Content**: Structured data for continents, countries, and cultural categories.
 - 🖼️ **Cloud Integration**: Image management via Cloudinary.
@@ -40,6 +41,7 @@ Built with **NestJS**, **TypeScript**, and **Prisma**, this backend provides a r
 The project follows a modular architecture for high maintainability:
 
 - **Modules**: Domain-driven separation (Auth, User, Battle, Challenge, etc.).
+- **Engine**: Core AI and RAG logic for automated content generation.
 - **Controllers**: Handling HTTP requests and WebSocket events.
 - **Services**: Encapsulating core business logic.
 - **Tasks**: Automated cron jobs for background operations.

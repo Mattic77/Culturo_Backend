@@ -33,6 +33,11 @@ classDiagram
         class BattleModule
     end
 
+    %% Engine Module
+    subgraph Engine
+        class RagModule
+    end
+
     %% Social Module
     subgraph Social
         class FriendModule

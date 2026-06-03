@@ -19,6 +19,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ChallengeModule } from './challenge/challenge.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RagModule } from './engine/rag/rag.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -43,6 +44,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AdminModule,
     FriendModule,
     ChallengeModule,
+    RagModule,
   ],
   controllers: [AppController],
   providers: [

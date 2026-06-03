@@ -1,0 +1,74 @@
+% --- CONFIGURATION REQUISE POUR OVERLEAF ---
+% Ajoutez ceci dans votre préambule (avant \begin{document}) :
+% \usepackage{svg}
+% \usepackage{float}
+
+% --- SECTION : CONCEPTION ET RÉALISATION BACKEND ---
+
+\section{Conception et Réalisation du Backend}
+
+Cette section détaille l'architecture technique, la modélisation des données et la logique métier implémentée pour l'application Culturo.
+
+\subsection{Architecture Logicielle}
+Le backend est développé avec le framework \textbf{NestJS}, utilisant une architecture modulaire. Cette approche permet une séparation stricte des responsabilités (SOC - Separation of Concerns) à travers trois couches principales :
+\begin{itemize}
+    \item \textbf{Controllers :} Gestion des points d'entrée API et validation des requêtes.
+    \item \textbf{Services :} Encapsulation de la logique métier complexe.
+    \item \textbf{Prisma ORM :} Interface de communication avec la base de données PostgreSQL.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    % Utilisation du format SVG pour une qualité vectorielle maximale
+    \includesvg[width=0.9\textwidth]{architecture_code} 
+    \caption{Diagramme de classes de l'architecture NestJS}
+    \label{fig:arch_backend}
+\end{figure}
+
+\subsection{Modélisation de la Base de Données}
+Le schéma de données a été conçu pour supporter un système de jeu compétitif. Les entités principales incluent la gestion des utilisateurs, des quiz par pays, des sessions de jeu, des batailles en temps réel et des défis.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=1\textwidth]{database_erd}
+    \caption{Diagramme Entité-Relation (ERD) de la base de données}
+    \label{fig:erd}
+\end{figure}
+
+\subsection{Analyse Fonctionnelle : Cas d'Utilisation}
+L'application distingue deux acteurs principaux : l'Administrateur et l'Utilisateur (Joueur).
+
+\subsubsection{Cas d'utilisation : Administrateur}
+L'administrateur possède des privilèges étendus pour la gestion du contenu et de la plateforme.
+\begin{figure}[H]
+    \centering
+    % Chemin mis à jour selon votre structure Draw.io
+    \includesvg[width=0.8\textwidth]{images/diagramme/Diagramme de cas utilisation general.drawio}
+    \caption{Diagramme de cas d'utilisation - Acteur Administrateur}
+\end{figure}
+
+\subsubsection{Cas d'utilisation : Utilisateur (Joueur)}
+Le joueur interagit avec les fonctionnalités ludiques et sociales de l'application.
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.8\textwidth]{images/diagramme/diagramme de cas dutilisation utilisateur.drawio} 
+    \caption{Diagramme de cas d'utilisation - Acteur Utilisateur}
+    \label{fig:usecase_user}
+\end{figure}
+
+Les actions principales de l'utilisateur incluent :
+\begin{itemize}
+    \item L'inscription et la personnalisation du profil.
+    \item La participation à des quiz solo par pays ou catégorie.
+    \item L'engagement dans des batailles 1v1 en temps réel.
+    \item Le suivi de sa progression (XP, niveaux) et son classement (Leaderboard).
+    \item La participation aux défis périodiques.
+\end{itemize}
+
+\subsection{Implémentations Techniques Avancées}
+
+\subsubsection{Automatisation des Défis (Cron Jobs)}
+Un système de "Sweeper" a été implémenté pour gérer le cycle de vie des défis de manière autonome. À l'aide du module \texttt{@nestjs/schedule}, des tâches d'arrière-plan vérifient chaque minute les dates de début et de fin des défis pour mettre à jour leur statut (\textit{Started, Pending, Expired}) sans intervention humaine.
+
+\subsubsection{Sécurité et Validation}
+La sécurité est assurée par des \textbf{Guards} JWT pour l'authentification et des \textbf{Roles Guards} pour restreindre l'accès aux APIs administratives. Toutes les données entrantes sont rigoureusement filtrées par des \textbf{DTOs} (Data Transfer Objects) utilisant \texttt{class-validator}.
