@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://via.placeholder.com/200?text=Culturo+Logo" width="200" alt="Culturo Logo" />
+  <img src="CulturoLogo.png" width="200" alt="Culturo Logo" />
 </p>
 
 # 🌍 Culturo Backend
