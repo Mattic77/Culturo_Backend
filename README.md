@@ -1,155 +1,119 @@
-# Culturo Backend
+<p align="center">
+  <img src="https://via.placeholder.com/200?text=Culturo+Logo" width="200" alt="Culturo Logo" />
+</p>
 
-Backend API for Culturo, a mobile quiz game focused on countries, categories, and competitive play.
+# 🌍 Culturo Backend
 
-Built with NestJS, TypeScript, and Prisma.
+> **Culturo** is a competitive mobile quiz game designed to explore world cultures, countries, and categories through engaging gameplay and social battles.
 
-## Overview
+Built with **NestJS**, **TypeScript**, and **Prisma**, this backend provides a robust, scalable API for authentication, game logic, progression tracking, and real-time interactions.
 
-Culturo backend is designed to power a country quiz experience with:
+---
 
-- User accounts and authentication tokens
-- Country and category based quizzes
-- Solo game sessions and score tracking
-- Online/offline ranking systems
-- Player battles and winners history
+## 🚀 Features
 
-## Tech Stack
+- 🔐 **Authentication & Security**: Secure JWT-based auth, OTP validation, and role-based access control (Admin/User).
+- 🎮 **Game Engine**: Solo game sessions with difficulty levels (Easy, Medium, Hard) and real-time answer validation.
+- ⚔️ **Battle System**: 1v1 competitive matches with real-time WebSocket communication.
+- 🏆 **Progression & Rankings**: XP system, level unlocking, and global Online/Offline leaderboards.
+- 📅 **Challenges**: Automated daily/monthly challenges with cron-based lifecycle management.
+- 🗺️ **World Content**: Structured data for continents, countries, and cultural categories.
+- 🖼️ **Cloud Integration**: Image management via Cloudinary.
 
-- NestJS 11
-- TypeScript 5
-- Prisma ORM
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [NestJS](https://nestjs.com/) (v11+)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **Real-time**: [Socket.io](https://socket.io/)
+- **Authentication**: JWT & Passport
+- **Storage**: [Cloudinary](https://cloudinary.com/)
+- **Documentation**: [Swagger / OpenAPI](https://swagger.io/)
+
+---
+
+## 🏗️ Architecture
+
+The project follows a modular architecture for high maintainability:
+
+- **Modules**: Domain-driven separation (Auth, User, Battle, Challenge, etc.).
+- **Controllers**: Handling HTTP requests and WebSocket events.
+- **Services**: Encapsulating core business logic.
+- **Tasks**: Automated cron jobs for background operations.
+
+Visual diagrams are available in the [docs/](docs/) folder:
+- [Database Schema (ERD)](docs/DIAGRAM_DATABASE.md)
+- [Code Architecture](docs/DIAGRAM_ARCHITECTURE.md)
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+- Node.js 20+
 - PostgreSQL
-- Jest for unit and e2e tests
-- ESLint + Prettier
+- Redis (Optional, for scaling)
 
-## Project Structure
+### Installation
 
-~~~text
-culturo_backend/
-  src/                # NestJS application source
-  prisma/             # Prisma schema and migrations
-  test/               # End to end tests
-  docs/               # Project documentation
-~~~
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/culturo-backend.git
+   cd culturo-backend
+   ```
 
-## Prerequisites
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-- Node.js 20 or newer
-- npm 10 or newer
-- PostgreSQL database
+3. Setup environment variables:
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/culturo"
+   JWT_SECRET="your_secret"
+   CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
+   ```
 
-## Environment Variables
+4. Database migration & generation:
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
 
-Create a .env file in the project root with the following value:
+5. Start the server:
+   ```bash
+   npm run start:dev
+   ```
 
-~~~env
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME?schema=public
-PORT=3000
-~~~
+---
 
-Notes:
+## 🧪 Testing
 
-- DATABASE_URL is required by Prisma and Prisma config.
-- PORT is optional. Default is 3000.
+```bash
+# Unit tests
+npm run test
 
-## Getting Started
+# E2E tests
+npm run test:e2e
 
-1. Install dependencies
+# Test coverage
+npm run test:cov
+```
 
-~~~bash
-npm install
-~~~
+---
 
-2. Generate Prisma client
+## 📝 API Documentation
 
-~~~bash
-npx prisma generate
-~~~
+Once the server is running, you can access the interactive Swagger documentation at:
+`http://localhost:3000/api`
 
-3. Run database migrations
+---
 
-~~~bash
-npx prisma migrate dev
-~~~
+## 📜 License
 
-4. Start the development server
-
-~~~bash
-npm run start:dev
-~~~
-
-The API runs by default on:
-
-~~~text
-http://localhost:3000
-~~~
-
-## Available Scripts
-
-~~~bash
-npm run build        # Build app into dist/
-npm run start        # Run app
-npm run start:dev    # Run in watch mode
-npm run start:debug  # Run in debug + watch mode
-npm run start:prod   # Run compiled app
-
-npm run lint         # Lint and auto-fix
-npm run format       # Format source and test files
-
-npm run test         # Unit tests
-npm run test:watch   # Unit tests in watch mode
-npm run test:cov     # Test coverage
-npm run test:e2e     # End to end tests
-~~~
-
-## Current API Status
-
-At the moment, the bootstrap endpoint returns a simple hello response:
-
-~~~http
-GET /
--> Hello World!
-~~~
-
-This confirms the backend is running and ready for module expansion.
-
-## Data Model (Prisma)
-
-Core entities already modeled in Prisma include:
-
-- User
-- Token
-- Country
-- Category
-- Quiz
-- Games
-- Battle
-- Ranked
-- UserRankOnline
-- UserRankOffline
-
-This schema provides a strong foundation for your quiz, progression, and ranking features.
-
-## Suggested Next Modules
-
-- Auth module (register, login, refresh token)
-- Users module (profile and preferences)
-- Countries module (list, search, details)
-- Categories module
-- Quiz module (question delivery and answer validation)
-- Game session module (start, submit, score)
-- Battle module (matchmaking and winner calculation)
-- Leaderboard module (online and offline rankings)
-
-## Development Notes
-
-- Keep migrations in version control.
-- Add request validation with class-validator and DTOs.
-- Add global exception filters and logging.
-- Enable CORS for your mobile app domain/environment.
-- Add Swagger for API documentation when routes are ready.
-
-## License
-
-This project is currently private and unlicensed for public distribution.
+This project is [UNLICENSED](LICENSE).

@@ -17,10 +17,12 @@ import { AdminModule } from './admin/admin.module';
 import { FriendModule } from './friend/friend.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-
+import { ChallengeModule } from './challenge/challenge.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
@@ -40,6 +42,7 @@ import { APP_GUARD } from '@nestjs/core';
     BattleModule,
     AdminModule,
     FriendModule,
+    ChallengeModule,
   ],
   controllers: [AppController],
   providers: [

@@ -35,6 +35,7 @@ model User {
   rankOnline       UserRankOnline[]
   gameSessions     GameSession[]
   stat             UserStat?
+  challenges       ChallengeUser[]
   sentRequests     Friendship[]      @relation("SentRequests")
   receivedRequests Friendship[]      @relation("ReceivedRequests")
   sentInvites      BattleInvite[]    @relation("SentInvites")
@@ -245,7 +246,7 @@ model Category {
   subtitle       String?
   icon           String?
   description    String?
-  theme        Theme          @default(TEAL)
+  theme          Theme          @default(TEAL)
   games          Games[]
   quizzes        Quiz[]
   userCategories UserCategory[]
@@ -326,10 +327,41 @@ model Battle {
   @@map("battle")
 }
 
-model UserStat {
-  id     String @id @default(uuid())
-  userId String @unique @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum ChallengeStatus {
+  STARTED
+  PENDING
+  EXPIRED
+}
+model Challenge {
+  id           String          @id @default(uuid())
+  description  String?
+  subtitle      String?
+  startAt      DateTime        @default(now()) @map("start_at")
+  endAt        DateTime?       @map("end_at")
+  status       ChallengeStatus @default(PENDING)
+  score        Int             @default(0)
+  isPublic     Boolean         @default(false) @map("is_public")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  users        ChallengeUser[]
+
+  @@map("challenge")
+}
+model ChallengeUser {
+  id           String          @id @default(uuid())
+  userId       String          @map("user_id")
+  challengeId  String          @map("challenge_id")
+  userScore    Int             @default(0) @map("user_score")
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge    Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId])
+  @@map("challenge_user")
+} 
+  model UserStat {
+  id           String          @id @default(uuid())
+  userId       String          @unique @map("user_id")
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stat")
 }
