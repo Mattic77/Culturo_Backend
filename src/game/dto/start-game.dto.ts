@@ -18,7 +18,8 @@ export class StartGameDto {
   categoryId?: string;
 
   @ApiProperty({
-    description: 'Specific country ID, "all", "random", or omit to use preferred country',
+    description:
+      'Specific country ID, "all", "random", or omit to use preferred country',
     example: 'all',
     required: false,
   })

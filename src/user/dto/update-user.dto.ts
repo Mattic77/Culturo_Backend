@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, IsDate } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsDate, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -21,4 +21,15 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   preferredCountryId?: string;
+}
+
+export class UpdateCountryPreferenceDto {
+  @ApiProperty({
+    example: 'uuid-of-country or "all"',
+    description:
+      'The ID of the country to prefer, or "all" to reset preference.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  countryId: string;
 }

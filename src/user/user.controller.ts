@@ -10,8 +10,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateCountryPreferenceDto } from './dto/update-country-preference.dto';
+import {
+  UpdateUserDto,
+  UpdateCountryPreferenceDto,
+} from './dto/update-user.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
