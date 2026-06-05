@@ -51,16 +51,24 @@ export class GameService {
 
     const categoryId = dto.categoryId;
 
-    // Fetch 15 random quiz IDs
-    const quizzes = await this.prisma.$queryRawUnsafe<any[]>(`
+    // Build safe dynamic query conditions
+    const conditions: Prisma.Sql[] = [];
+    if (countryId) conditions.push(Prisma.sql`country_id = ${countryId}`);
+    if (categoryId) conditions.push(Prisma.sql`category_id = ${categoryId}`);
+    if (difficulty) conditions.push(Prisma.sql`difficulty = ${difficulty}`);
+
+    const whereClause =
+      conditions.length > 0
+        ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+        : Prisma.empty;
+
+    // Fetch 15 random quiz IDs safely
+    const quizzes = await this.prisma.$queryRaw<any[]>`
       SELECT id FROM quiz
-      WHERE 1=1
-      ${countryId ? `AND country_id = '${countryId}'` : ''}
-      ${categoryId ? `AND category_id = '${categoryId}'` : ''}
-      ${difficulty ? `AND difficulty = '${difficulty}'` : ''}
+      ${whereClause}
       ORDER BY RANDOM()
       LIMIT 15
-    `);
+    `;
 
     if (quizzes.length === 0) {
       throw new NotFoundException(
