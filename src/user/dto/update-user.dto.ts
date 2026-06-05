@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEmail, IsDate, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsDate,
+  IsNotEmpty,
+  IsUUID,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -19,7 +27,7 @@ export class UpdateUserDto {
 
   @ApiProperty({ example: 'uuid-of-country', required: false })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   preferredCountryId?: string;
 }
 
@@ -31,5 +39,11 @@ export class UpdateCountryPreferenceDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(
+    /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|all)$/i,
+    {
+      message: 'countryId must be a valid UUID or "all"',
+    },
+  )
   countryId: string;
 }
