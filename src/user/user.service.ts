@@ -244,4 +244,29 @@ export class UserService {
 
     return user;
   }
+
+  /**
+   * Update user country preference for automated filtering
+   */
+  async updateCountryPreference(userId: string, countryId: string) {
+    try {
+      const data =
+        countryId.toLowerCase() === 'all'
+          ? { preferredCountryId: null }
+          : { preferredCountryId: countryId };
+
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data,
+        select: { preferredCountryId: true },
+      });
+
+      return {
+        message: 'Country preference updated successfully',
+        preferredCountryId: user.preferredCountryId,
+      };
+    } catch (error) {
+      throw new HttpException('Failed to update country preference', 400);
+    }
+  }
 }

@@ -33,24 +33,30 @@ export class GameService {
     }
 
     // Handle Country Selection
-    if (dto.countrySelection === CountrySelection.RANDOM) {
+    if (!dto.countrySelection) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { preferredCountryId: true },
+      });
+      countryId = user?.preferredCountryId || undefined;
+    } else if (dto.countrySelection === CountrySelection.RANDOM) {
       const randomCountry = await this.prisma.country.findFirst({
         orderBy: { id: 'asc' },
         skip: Math.floor(Math.random() * (await this.prisma.country.count())),
       });
       countryId = randomCountry?.id;
-    } else if (
-      dto.countrySelection &&
-      dto.countrySelection !== CountrySelection.ALL
-    ) {
+    } else if (dto.countrySelection !== CountrySelection.ALL) {
       countryId = dto.countrySelection;
     }
+
+    const categoryId = dto.categoryId;
 
     // Fetch 15 random quiz IDs
     const quizzes = await this.prisma.$queryRawUnsafe<any[]>(`
       SELECT id FROM quiz
       WHERE 1=1
       ${countryId ? `AND country_id = '${countryId}'` : ''}
+      ${categoryId ? `AND category_id = '${categoryId}'` : ''}
       ${difficulty ? `AND difficulty = '${difficulty}'` : ''}
       ORDER BY RANDOM()
       LIMIT 15

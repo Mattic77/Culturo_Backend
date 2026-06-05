@@ -16,4 +16,9 @@ export class UpdateUserDto {
   @IsOptional()
   @IsDate()
   dateOfBirth?: Date;
+
+  @ApiProperty({ example: 'uuid-of-country', required: false })
+  @IsOptional()
+  @IsString()
+  preferredCountryId?: string;
 }
