@@ -1,4 +1,10 @@
-import { Controller, Get, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { BattleService } from './battle.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import {
@@ -7,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiQuery,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('battle')
@@ -21,11 +28,16 @@ export class BattleController {
   @ApiQuery({ name: 'skip', required: false, type: Number })
   @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiOkResponse({ description: 'Battle history retrieved successfully.' })
+  @ApiBadRequestResponse({ description: 'Invalid pagination parameters.' })
   getBattleHistory(
     @Request() req: { user: { id: string } },
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.battleService.getBattleHistory(req.user.id, +(skip || 0), +(take || 20));
+    return this.battleService.getBattleHistory(
+      req.user.id,
+      +(skip || 0),
+      +(take || 20),
+    );
   }
 }

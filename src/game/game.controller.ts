@@ -16,6 +16,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('game')
@@ -31,6 +33,8 @@ export class GameController {
     status: HttpStatus.OK,
     description: 'Returns sessionId and first question',
   })
+  @ApiBadRequestResponse({ description: 'Invalid game configuration.' })
+  @ApiNotFoundResponse({ description: 'Category or Country not found.' })
   startSession(@Req() req: any, @Body() startGameDto: StartGameDto) {
     return this.gameService.startSession(req.user.id, startGameDto);
   }
@@ -41,6 +45,8 @@ export class GameController {
     status: HttpStatus.OK,
     description: 'Returns correctness and next question',
   })
+  @ApiBadRequestResponse({ description: 'Invalid answer or session expired.' })
+  @ApiNotFoundResponse({ description: 'Session not found.' })
   submitAnswer(@Req() req: any, @Body() submitAnswerDto: SubmitAnswerDto) {
     return this.gameService.submitAnswer(req.user.id, submitAnswerDto);
   }
@@ -51,7 +57,12 @@ export class GameController {
     status: HttpStatus.OK,
     description: 'Returns final score and XP status',
   })
+  @ApiBadRequestResponse({ description: 'Session already completed.' })
+  @ApiNotFoundResponse({ description: 'Session not found.' })
   completeSession(@Req() req: any, @Body() completeGameDto: CompleteGameDto) {
-    return this.gameService.completeSession(req.user.id, completeGameDto.sessionId);
+    return this.gameService.completeSession(
+      req.user.id,
+      completeGameDto.sessionId,
+    );
   }
 }

@@ -20,7 +20,12 @@ import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiCreatedResponse,
+  ApiBadRequestResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
+import { CreateRankDto } from './dto/create-rank.dto';
+import { UpdateRankDto } from './dto/update-rank.dto';
 
 @ApiTags('progression')
 @Controller('progression')
@@ -31,7 +36,9 @@ export class ProgressionController {
   @ApiBearerAuth()
   @Get('level')
   @ApiOperation({ summary: 'Get current user level and XP progress' })
-  @ApiOkResponse({ description: 'User level information retrieved successfully.' })
+  @ApiOkResponse({
+    description: 'User level information retrieved successfully.',
+  })
   getUserLevel(@Request() req: { user: { id: string } }) {
     return this.progressionService.getUserLevel(req.user.id);
   }
@@ -40,7 +47,9 @@ export class ProgressionController {
   @ApiBearerAuth()
   @Get('ranks/me')
   @ApiOperation({ summary: 'Get current user ranks (Online & Offline)' })
-  @ApiOkResponse({ description: 'User rank information retrieved successfully.' })
+  @ApiOkResponse({
+    description: 'User rank information retrieved successfully.',
+  })
   getUserRanks(@Request() req: { user: { id: string } }) {
     return this.progressionService.getUserRanks(req.user.id);
   }
@@ -67,8 +76,10 @@ export class ProgressionController {
   @Post('ranks')
   @ApiOperation({ summary: 'Create a new rank (Admin only)' })
   @ApiCreatedResponse({ description: 'Rank created successfully.' })
-  createRank(@Body() data: { name: string; minScore: number; maxScore: number }) {
-    return this.progressionService.createRank(data);
+  @ApiBadRequestResponse({ description: 'Invalid data provided.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
+  createRank(@Body() createRankDto: CreateRankDto) {
+    return this.progressionService.createRank(createRankDto);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
@@ -77,11 +88,11 @@ export class ProgressionController {
   @Patch('ranks/:id')
   @ApiOperation({ summary: 'Update a rank (Admin only)' })
   @ApiOkResponse({ description: 'Rank updated successfully.' })
-  updateRank(
-    @Param('id') id: string,
-    @Body() data: { name?: string; minScore?: number; maxScore?: number },
-  ) {
-    return this.progressionService.updateRank(id, data);
+  @ApiNotFoundResponse({ description: 'Rank not found.' })
+  @ApiBadRequestResponse({ description: 'Invalid data provided.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
+  updateRank(@Param('id') id: string, @Body() updateRankDto: UpdateRankDto) {
+    return this.progressionService.updateRank(id, updateRankDto);
   }
 
   @UseGuards(AuthGuard, RolesGuard)
@@ -90,6 +101,8 @@ export class ProgressionController {
   @Delete('ranks/:id')
   @ApiOperation({ summary: 'Delete a rank (Admin only)' })
   @ApiOkResponse({ description: 'Rank deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Rank not found.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   deleteRank(@Param('id') id: string) {
     return this.progressionService.deleteRank(id);
   }

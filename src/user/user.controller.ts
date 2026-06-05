@@ -23,6 +23,8 @@ import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiQuery,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 
 @Controller('users')
@@ -38,10 +40,8 @@ export class UserController {
   @ApiQuery({ name: 'skip', required: false, type: Number })
   @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiOkResponse({ description: 'List of users retrieved successfully.' })
-  getAllUsers(
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
+  getAllUsers(@Query('skip') skip?: string, @Query('take') take?: string) {
     return this.userService.getAllUsers(+(skip || 0), +(take || 10));
   }
 
@@ -51,6 +51,7 @@ export class UserController {
   @Get('admin/stats')
   @ApiOperation({ summary: 'Get user platform statistics (Admin only)' })
   @ApiOkResponse({ description: 'Statistics retrieved successfully.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   getAdminStats() {
     return this.userService.getAdminStats();
   }
@@ -61,6 +62,8 @@ export class UserController {
   @Patch('admin/user-type/:id')
   @ApiOperation({ summary: 'Update user type/role (Admin only)' })
   @ApiOkResponse({ description: 'User type updated successfully.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   updateUserType(
     @Param('id') id: string,
     @Body('userType') userType: Usertype,
@@ -72,7 +75,7 @@ export class UserController {
   @ApiBearerAuth()
   @Get('getme')
   @ApiOperation({ summary: 'Get Current User Profile' })
-  @ApiCreatedResponse({ description: 'Profile retrieved successfully.' })
+  @ApiOkResponse({ description: 'Profile retrieved successfully.' })
   getCurrentUser(@Request() req: { user: { id: string } }) {
     return this.userService.findById(req.user.id);
   }
@@ -85,7 +88,7 @@ export class UserController {
     description:
       'Update username, email, dateOfBirth or any combination of these fields.',
   })
-  @ApiCreatedResponse({ description: 'Profile updated successfully.' })
+  @ApiOkResponse({ description: 'Profile updated successfully.' })
   @ApiBadRequestResponse({ description: 'Failed to update profile.' })
   updateUser(
     @Request() req: { user: { id: string } },
@@ -93,9 +96,12 @@ export class UserController {
   ) {
     return this.userService.updateUser(req.user.id, updateUserDto);
   }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Patch('updateemail')
   @ApiOperation({ summary: 'Update User Email' })
-  @ApiCreatedResponse({ description: 'Email updated successfully.' })
+  @ApiOkResponse({ description: 'Email updated successfully.' })
   @ApiBadRequestResponse({ description: 'Failed to update email.' })
   updateEmail(
     @Request()
@@ -112,7 +118,7 @@ export class UserController {
   @ApiBearerAuth()
   @Delete('deleteme')
   @ApiOperation({ summary: 'Delete Current User Account' })
-  @ApiCreatedResponse({ description: 'User deleted successfully.' })
+  @ApiOkResponse({ description: 'User deleted successfully.' })
   @ApiBadRequestResponse({ description: 'Failed to delete user.' })
   deleteCurrentUser(@Request() req: { user: { id: string } }) {
     return this.userService.deleteUser(req.user.id);
@@ -120,8 +126,8 @@ export class UserController {
 
   @Get('profile/:id')
   @ApiOperation({ summary: 'Get Public Profile of any User' })
-  @ApiCreatedResponse({ description: 'Public profile retrieved successfully.' })
-  @ApiBadRequestResponse({ description: 'User not found.' })
+  @ApiOkResponse({ description: 'Public profile retrieved successfully.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
   getPublicProfile(@Param('id') id: string) {
     return this.userService.getPublicProfile(id);
   }
