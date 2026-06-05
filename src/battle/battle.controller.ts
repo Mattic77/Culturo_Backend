@@ -22,27 +22,45 @@ import { BattleHistoryResponseDto } from './dto/battle-history-response.dto';
 /**
  * REST endpoints for the Battle module.
  * 
- * 🎮 **WEBSOCKET BATTLE GUIDE (For Mobile Devs)** 🎮
- * Battles are played in real-time via WebSockets. Connect to the `/battle` namespace with query param `?userId=your-uuid`.
+ * ---
+ * 🎮 **COMPLETE WEBSOCKET BATTLE WORKFLOW (For Mobile Devs)** 🎮
  * 
- * **1. Matchmaking:**
- * - `emit('join_queue', { username: 'John' })`: Join matchmaking.
- * - `listen('queue_joined')`: Acknowledges entry.
- * - `listen('match_found')`: Received when matched. Contains `roomId`.
- * - `listen('battle_started')`: Fired 3s after match found.
+ * Battles are real-time duels. All communication happens via the `/battle` namespace.
  * 
- * **2. Playing:**
- * - `listen('new_question')`: Receives question (without answer) + current index.
- * - `emit('submit_answer', { roomId: '...', answer: 'Paris' })`: Send your answer.
- * - `listen('answer_result')`: Immediate feedback (Correct?, points earned).
- * - `listen('round_ended')`: Sent when both players answer. Contains true answer & intermediate scores.
+ * ### 1. Connection 🔌
+ * **Namespace:** `/battle`
+ * **Required Query Param:** `userId` (The UUID of the authenticated user)
+ * **Example:** `ws://api-url/battle?userId=123-abc`
  * 
- * **3. Chat (Optional):**
- * - `emit('send_battle_message', { roomId, message })`: Send a chat message.
- * - `listen('new_battle_message')`: Receive messages from opponent.
+ * ### 2. Matchmaking Phase 🤝
+ * 1. **Client emits `join_queue`**: `{ "username": "YourName" }`
+ * 2. **Server emits `queue_joined`**: Confirms you are in line.
+ * 3. **Server emits `match_found`**: 
+ *    ```json
+ *    { "battleId": "...", "roomId": "...", "players": [{ "userId", "username" }, ...] }
+ *    ```
+ *    *Note: The UI should show a countdown now (3 seconds).*
  * 
- * **4. Finish:**
- * - `listen('battle_finished')`: Receives final winner and XP updates.
+ * ### 3. Gameplay Loop (15 Rounds) 🎮
+ * 1. **Server emits `new_question`**: 
+ *    ```json
+ *    { "question": { "id", "question", "suggestedAnswer": { "options" } }, "questionNumber": 1, "totalQuestions": 15 }
+ *    ```
+ * 2. **Client emits `submit_answer`**: `{ "roomId": "...", "answer": "Paris" }`
+ * 3. **Server emits `answer_result`**: Immediate personal feedback (`isCorrect`, `points`).
+ * 4. **Server emits `round_ended`**: Both players finished. Contains `scores` array and the `correctAnswer`.
+ * 
+ * ### 4. Battle Finish 🏁
+ * 1. **Server emits `battle_finished`**:
+ *    ```json
+ *    { "winnerId": "...", "finalScores": [{ "userId", "username", "score" }, ...] }
+ *    ```
+ *    *Note: XP and levels are updated automatically in the DB by the server.*
+ * 
+ * ### 5. Social & Extras 💬
+ * - **Chat:** Emit `send_battle_message` (`roomId`, `message`) ➔ Listen for `new_battle_message`.
+ * - **Invites:** Emit `send_invite` (`receiverId`, `senderUsername`) ➔ Target receives `invite_received`.
+ * ---
  */
 export class BattleController {
   constructor(private readonly battleService: BattleService) {}
