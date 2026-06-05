@@ -140,6 +140,7 @@ export class UserController {
   @Patch('preferences/country')
   @ApiOperation({ summary: 'Update user country preference' })
   @ApiOkResponse({ description: 'Preference updated successfully.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
   @ApiBadRequestResponse({ description: 'Failed to update preference.' })
   updateCountryPreference(
     @Request() req: { user: { id: string } },
