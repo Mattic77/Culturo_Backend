@@ -18,6 +18,7 @@ import {
   ApiTags,
   ApiCreatedResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 
 @Controller('auth')
@@ -68,6 +69,7 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get Current User Profile' })
   @ApiCreatedResponse({ description: 'Profile retrieved successfully.' })
   @Get('me')

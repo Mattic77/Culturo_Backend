@@ -24,7 +24,9 @@ export class RagService {
    * Ingest raw text into the knowledge base.
    */
   async ingestData(content: string, metadata: any) {
-    this.logger.log(`Ingesting data for ${metadata.country || 'unknown country'}`);
+    this.logger.log(
+      `Ingesting data for ${metadata.country || 'unknown country'}`,
+    );
 
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
@@ -34,8 +36,10 @@ export class RagService {
     const docs = await splitter.createDocuments([content], [metadata]);
 
     for (const doc of docs) {
-      const [embedding] = await this.embeddings.embedDocuments([doc.pageContent]);
-      
+      const [embedding] = await this.embeddings.embedDocuments([
+        doc.pageContent,
+      ]);
+
       const embeddingString = `[${embedding.join(',')}]`;
 
       await this.prisma.$executeRaw`
@@ -68,10 +72,19 @@ export class RagService {
   /**
    * Generate a quiz based on the knowledge base.
    */
-  async generateQuiz(countryId: string, categoryId: string, difficulty: Difficulty, count = 1) {
+  async generateQuiz(
+    countryId: string,
+    categoryId: string,
+    difficulty: Difficulty,
+    count = 1,
+  ) {
     // 1. Get context from metadata (country name, category name)
-    const country = await this.prisma.country.findUnique({ where: { id: countryId } });
-    const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    const country = await this.prisma.country.findUnique({
+      where: { id: countryId },
+    });
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
 
     if (!country || !category) {
       throw new Error('Country or Category not found');
@@ -81,10 +94,12 @@ export class RagService {
     const searchResults = await this.searchKnowledge(query, 5);
 
     if (searchResults.length === 0) {
-      this.logger.warn(`No knowledge base entry found for ${query}. Using general LLM knowledge.`);
+      this.logger.warn(
+        `No knowledge base entry found for ${query}. Using general LLM knowledge.`,
+      );
     }
 
-    const context = searchResults.map(r => r.content).join('\n---\n');
+    const context = searchResults.map((r) => r.content).join('\n---\n');
 
     const prompt = `
       You are an expert quiz creator for the "Culturo" mobile game.
@@ -111,7 +126,7 @@ export class RagService {
 
     const response = await this.llm.invoke(prompt);
     const content = response.content.toString();
-    
+
     // Clean potential markdown code blocks
     const jsonStr = content.replace(/```json|```/g, '').trim();
     const generatedQuizzes = JSON.parse(jsonStr);
@@ -119,17 +134,29 @@ export class RagService {
     // Save to database
     const savedQuizzes: Quiz[] = [];
     for (const q of generatedQuizzes) {
-      const saved = await this.prisma.quiz.create({
-        data: {
-          question: q.question,
-          answer: q.answer,
-          suggestedAnswer: q.suggestedAnswer,
-          categoryId: category.id,
-          countryId: country.id,
-          difficulty: difficulty
+      // Check if question already exists (case-insensitive)
+      const existing = await this.prisma.quiz.findFirst({
+        where: { 
+          question: {
+            equals: q.question,
+            mode: 'insensitive' // Ignore uppercase/lowercase differences
+          }
         }
       });
-      savedQuizzes.push(saved);
+
+      if (!existing) {
+        const saved = await this.prisma.quiz.create({
+          data: {
+            question: q.question,
+            answer: q.answer,
+            suggestedAnswer: q.suggestedAnswer,
+            categoryId: category.id,
+            countryId: country.id,
+            difficulty: difficulty,
+          },
+        });
+        savedQuizzes.push(saved);
+      }
     }
 
     return savedQuizzes;
