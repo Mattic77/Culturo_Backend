@@ -282,5 +282,4 @@ export class UserService {
       throw new HttpException('Failed to update country preference', 400);
     }
   }
-  }
 }
