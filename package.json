@@ -16,6 +16,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:battle:stress": "ts-node scripts/test-battle-stress.ts",
+    "test:rag": "ts-node scripts/test-rag.ts",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -26,6 +27,7 @@
   "dependencies": {
     "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.1.48",
+    "@langchain/ollama": "^1.2.7",
     "@langchain/openai": "^1.4.7",
     "@langchain/textsplitters": "^1.0.1",
     "@nestjs/common": "^11.0.1",

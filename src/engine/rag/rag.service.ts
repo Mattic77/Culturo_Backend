@@ -1,22 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { OpenAIEmbeddings, ChatOpenAI } from '@langchain/openai';
+import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { Difficulty, Quiz } from '@prisma/client';
 
 @Injectable()
 export class RagService {
   private readonly logger = new Logger(RagService.name);
-  private embeddings: OpenAIEmbeddings;
-  private llm: ChatOpenAI;
+  private embeddings: OllamaEmbeddings;
+  private llm: ChatOllama;
 
   constructor(private prisma: PrismaService) {
-    this.embeddings = new OpenAIEmbeddings({
-      modelName: 'text-embedding-3-small',
+    this.embeddings = new OllamaEmbeddings({
+      model: 'nomic-embed-text',
+      baseUrl: 'http://localhost:11434', // Local Ollama
     });
-    this.llm = new ChatOpenAI({
-      modelName: 'gpt-4o-mini',
+    this.llm = new ChatOllama({
+      model: 'llama3.2',
       temperature: 0.2,
+      baseUrl: 'http://localhost:11434',
     });
   }
 
