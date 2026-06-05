@@ -250,10 +250,20 @@ export class UserService {
    */
   async updateCountryPreference(userId: string, countryId: string) {
     try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+
+      if (!existingUser) {
+        throw new HttpException('User not found', 404);
+      }
+
+      const normalizedCountryId = countryId.trim();
       const data =
-        countryId.toLowerCase() === 'all'
+        normalizedCountryId.toLowerCase() === 'all'
           ? { preferredCountryId: null }
-          : { preferredCountryId: countryId };
+          : { preferredCountryId: normalizedCountryId };
 
       const user = await this.prisma.user.update({
         where: { id: userId },
@@ -266,7 +276,11 @@ export class UserService {
         preferredCountryId: user.preferredCountryId,
       };
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException('Failed to update country preference', 400);
     }
+  }
   }
 }
