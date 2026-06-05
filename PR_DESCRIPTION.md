@@ -1,21 +1,24 @@
 ## GitHub Issue
 
-Closes GH-24
+Closes GH-25
 
 ## Description 📝
 
-This PR completes the Swagger/OpenAPI documentation for all existing API endpoints. It ensures that every controller has proper tags, operation summaries, and response descriptions, and that all request DTOs are correctly documented with `@ApiProperty`.
+This PR implements a dedicated API endpoint for users to manage their country preferences. This preference is used by the game engine to automatically filter questions without requiring the user to select their country manually for every session.
 
 ## Type of Change
 
-- [ ] ✨ New feature
-- [ ] 🐛 Bug fix
-- [x] 📝 Documentation
-- [x] 🧪 Tests (documentation testing)
+- [x] ✨ New feature (non-breaking change that adds functionality)
+- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
+- [ ] 📝 Documentation
+- [x] ♻️ Code refactor (improved game engine selection logic)
 
 ## Changes
 
-- Added Swagger decorators to `AppController`, `ChallengeController`, `GameController`, `FriendController`, and `ProgressionController`.
-- Created formal DTOs (`CreateRankDto`, `UpdateRankDto`) for the Progression module to replace inline types.
-- Fixed a missing `AuthGuard` on the `updateEmail` endpoint in `UserController` to ensure security consistency.
-- Standardized use of `@ApiBearerAuth()` across all protected routes.
+- Created `UpdateCountryPreferenceDto` to handle "all" or specific UUID inputs.
+- Implemented `updateCountryPreference` in `UserService` to manage the `preferredCountryId` field.
+- Added `PATCH /users/preferences/country` to `UserController` with full Swagger documentation.
+- Integrated the preference check into `GameService.startSession`.
+- Enabled `categoryId` filtering in `GameService.startSession`.
+
+## Screenshots 📸 (N/A)

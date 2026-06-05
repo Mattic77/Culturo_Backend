@@ -10,7 +10,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  UpdateUserDto,
+  UpdateCountryPreferenceDto,
+} from './dto/update-user.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -130,5 +133,19 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'User not found.' })
   getPublicProfile(@Param('id') id: string) {
     return this.userService.getPublicProfile(id);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Patch('preferences/country')
+  @ApiOperation({ summary: 'Update user country preference' })
+  @ApiOkResponse({ description: 'Preference updated successfully.' })
+  @ApiNotFoundResponse({ description: 'User not found.' })
+  @ApiBadRequestResponse({ description: 'Failed to update preference.' })
+  updateCountryPreference(
+    @Request() req: { user: { id: string } },
+    @Body() dto: UpdateCountryPreferenceDto,
+  ) {
+    return this.userService.updateCountryPreference(req.user.id, dto.countryId);
   }
 }

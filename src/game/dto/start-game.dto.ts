@@ -9,7 +9,17 @@ export enum CountrySelection {
 
 export class StartGameDto {
   @ApiProperty({
-    description: 'Specific country ID, "all", or "random"',
+    example: 'uuid-of-category',
+    description: 'The ID of the category for the game session',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiProperty({
+    description:
+      'Specific country ID, "all", "random", or omit to use preferred country',
     example: 'all',
     required: false,
   })
