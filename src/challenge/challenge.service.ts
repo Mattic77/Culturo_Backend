@@ -98,4 +98,48 @@ export class ChallengeService {
 
     return challenge;
   }
+
+  async joinChallenge(userId: string, challengeId: string) {
+    const challenge = await this.prisma.challenge.findUnique({
+      where: { id: challengeId },
+    });
+
+    if (!challenge) {
+      throw new NotFoundException(`Challenge with ID ${challengeId} not found`);
+    }
+
+    if (challenge.status === ChallengeStatus.EXPIRED) {
+      throw new Error('This challenge has already expired.');
+    }
+
+    // Check if already joined
+    const existing = await this.prisma.challengeUser.findUnique({
+      where: {
+        userId_challengeId: {
+          userId,
+          challengeId,
+        },
+      },
+    });
+
+    if (existing) {
+      return { message: 'You have already joined this challenge.', alreadyJoined: true };
+    }
+
+    return this.prisma.challengeUser.create({
+      data: {
+        userId,
+        challengeId,
+      },
+    });
+  }
+
+  async getMyChallenges(userId: string) {
+    return this.prisma.challengeUser.findMany({
+      where: { userId },
+      include: {
+        challenge: true,
+      },
+    });
+  }
 }

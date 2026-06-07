@@ -240,6 +240,22 @@ export class GameService {
       },
     });
 
+    // --- Challenge Progression ---
+    // Automatically update scores for all STARTED challenges that the user has joined.
+    await this.prisma.challengeUser.updateMany({
+      where: {
+        userId,
+        challenge: {
+          status: 'STARTED',
+        },
+      },
+      data: {
+        userScore: {
+          increment: session.currentScore,
+        },
+      },
+    });
+
     return {
       finalScore: session.currentScore,
       earnedXp,

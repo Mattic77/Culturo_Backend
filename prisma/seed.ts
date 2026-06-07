@@ -1,7 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { Usertype, Continent, Difficulty, Theme } from '@prisma/client';
+import {
+  Usertype,
+  Continent,
+  Difficulty,
+  Theme,
+  ChallengeStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -227,6 +233,38 @@ async function main() {
       });
     }
     console.log('Users seeded.');
+
+    // --- Seed Challenges ---
+    const challenges = [
+      {
+        description: 'History Explorer',
+        subtitle: 'Complete 10 history quizzes',
+        status: ChallengeStatus.PENDING,
+        score: 100,
+        isPublic: true,
+      },
+      {
+        description: 'Geography Master',
+        subtitle: 'Complete 20 geography quizzes',
+        status: ChallengeStatus.STARTED,
+        score: 250,
+        isPublic: true,
+      },
+      {
+        description: 'Secret Quest',
+        subtitle: 'Hidden challenge for elite players',
+        status: ChallengeStatus.PENDING,
+        score: 500,
+        isPublic: false,
+      },
+    ];
+
+    for (const challenge of challenges) {
+      await prisma.challenge.create({
+        data: challenge,
+      });
+    }
+    console.log('Challenges seeded.');
 
     console.log('Seeding finished.');
   } catch (error) {

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ChallengeService } from './challenge.service';
 import { CreateChallengeDto } from './dto/create-challenge.dto';
@@ -40,6 +41,26 @@ export class ChallengeController {
   @ApiForbiddenResponse({ description: 'Forbidden: Admin role required.' })
   create(@Body() createChallengeDto: CreateChallengeDto) {
     return this.challengeService.create(createChallengeDto);
+  }
+
+  @Post(':id/join')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Join a challenge' })
+  @ApiOkResponse({ description: 'Successfully joined the challenge.' })
+  @ApiNotFoundResponse({ description: 'Challenge not found.' })
+  @ApiBadRequestResponse({ description: 'Challenge expired or already joined.' })
+  join(@Param('id') id: string, @Request() req: { user: { id: string } }) {
+    return this.challengeService.joinChallenge(req.user.id, id);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my joined challenges and progress' })
+  @ApiOkResponse({ description: 'List of your challenges retrieved.' })
+  getMyChallenges(@Request() req: { user: { id: string } }) {
+    return this.challengeService.getMyChallenges(req.user.id);
   }
 
   @Patch(':id/status')
