@@ -364,6 +364,7 @@ model ChallengeUser {
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge    Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, challengeId])
   @@index([userId])
   @@index([challengeId])
   @@map("challenge_user")
@@ -421,7 +422,7 @@ enum Level {
 model KnowledgeBase {
   id        String                       @id @default(uuid())
   content   String
-  embedding Unsupported("vector(1536)")?
+  embedding Unsupported("vector(768)")?
   metadata  Json?
   createdAt DateTime                     @default(now())
 
